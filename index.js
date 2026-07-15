@@ -32,6 +32,13 @@ const app = express();
 
 app.use(cors());
 
+// CORS allow karein
+app.use(cors({
+  origin: 'http://localhost:8080', // React ka URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // ✅ DB Connection
