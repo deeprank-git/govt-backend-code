@@ -30,14 +30,15 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
-
-// CORS allow karein
 app.use(cors({
-  origin: 'http://localhost:8080', // React ka URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  maxAge: 86400
 }));
+
+app.options('*', cors());
 
 app.use(express.json());
 
