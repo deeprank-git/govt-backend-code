@@ -9,7 +9,7 @@ import connectDB from './db.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import adminCategoryRoutes from './routes/categoryAdminRoutes.js';
 
-// ✅ NEW IMPORTS
+// ✅ NEW IMPORTS 
 import testSeriesRoutes from './routes/testSeriesRoutes.js';
 import testSeriesAdminRoutes from './routes/testSeriesAdminRoutes.js';
 
@@ -30,22 +30,7 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-    : ["http://localhost:3000", "http://localhost:5173"];
-
-app.use(
-    cors({
-        origin: (origin, callback) => {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error(`Origin ${origin} not allowed by CORS`));
-            }
-        },
-        credentials: true,
-    })
-);
+app.use(cors());
 
 app.use(express.json());
 
