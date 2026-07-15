@@ -3,20 +3,6 @@
 import Test from "../models/Test.js";
 import TestSeries from "../models/TestSeries.js";
 
-// Ensures a Test's category matches its TestSeries' category, if a testSeries is given.
-// Returns an error message string if invalid, or null if OK.
-const validateCategorySeriesMatch = async (categoryId, testSeriesId) => {
-  if (!testSeriesId) return null; // standalone test, nothing to cross-check
-
-  const series = await TestSeries.findById(testSeriesId);
-  if (!series) return "testSeries not found";
-
-  if (String(series.category) !== String(categoryId)) {
-    return `category mismatch: TestSeries "${series.name}" belongs to a different category`;
-  }
-  return null;
-};
-
 // ✅ GET tests (by category or series)
 // Students/instructors only see published + active tests.
 // Admin sees everything (including drafts) for management purposes.
@@ -96,13 +82,6 @@ export const getTestById = async (req, res) => {
 // ✅ CREATE test
 export const createTest = async (req, res) => {
   try {
-
-    const { category, testSeries } = req.body;
-
-    const validationError = await validateCategorySeriesMatch(category, testSeries);
-    if (validationError) {
-      return res.status(400).json({ success: false, message: validationError });
-    }
     const test = await Test.create({ ...req.body, createdBy: req.user.id });
 
     // 🔥 update totalTests in series (if this test belongs to one)
@@ -135,14 +114,6 @@ export const updateTest = async (req, res) => {
         success: false,
         message: "Test not found",
       });
-    }
-
-    const category = req.body.category ?? existing.category;
-    const testSeries = req.body.testSeries !== undefined ? req.body.testSeries : existing.testSeries;
-
-    const validationError = await validateCategorySeriesMatch(category, testSeries);
-    if (validationError) {
-      return res.status(400).json({ success: false, message: validationError });
     }
 
     const updated = await Test.findByIdAndUpdate(req.params.id, req.body, {

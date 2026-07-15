@@ -37,7 +37,9 @@ const categorySchema = new mongoose.Schema(
   }
 );
 
-categorySchema.pre("save", function (next) {
+// Mongoose 9: pre("save") no longer receives a next() callback — the first
+// arg is a SaveOptions object. Just mutate `this` synchronously; no callback needed.
+categorySchema.pre("save", function () {
   if (this.isModified("name")) {
     this.slug = this.name
       .toLowerCase()

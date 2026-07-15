@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import express from 'express';
+import cors from 'cors';
 
 import userRouter from './routes/authRoutes.js';
 import connectDB from './db.js';
@@ -20,10 +21,31 @@ import questionAdminRoutes from "./routes/questionAdminRoutes.js";
 
 import testAttemptRoutes from "./routes/testAttemptRoutes.js";
 
+import userRoutes from "./routes/userRoutes.js";
+import userAdminRoutes from "./routes/userAdminRoutes.js";
+import leaderboardRoutes from "./routes/leaderboardRoutes.js";
+
 
 dotenv.config();
 
 const app = express();
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+    : ["http://localhost:3000", "http://localhost:5173"];
+
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error(`Origin ${origin} not allowed by CORS`));
+            }
+        },
+        credentials: true,
+    })
+);
 
 app.use(express.json());
 
@@ -49,6 +71,13 @@ app.use("/api/questions", questionRoutes);
 app.use("/api/admin/questions", questionAdminRoutes);
 
 app.use("/api/test-attempts", testAttemptRoutes);
+
+// ✅ USERS (self-service + admin management)
+app.use("/api/users", userRoutes);
+app.use("/api/admin/users", userAdminRoutes);
+
+// ✅ LEADERBOARD
+app.use("/api/leaderboard", leaderboardRoutes);
 
 // ✅ HEALTH CHECK
 app.get("/api/health", (req, res) => {

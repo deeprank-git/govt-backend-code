@@ -33,10 +33,12 @@ const UserSchema= new mongoose.Schema({
 
 
 // Middleware: Automatically hash the password before saving it to the database
-UserSchema.pre('save', async function (next) {
+// Mongoose 9: pre("save") no longer receives a next() callback — the first
+// arg is a SaveOptions object, so `return next()` would throw. Just return early instead.
+UserSchema.pre('save', async function () {
   // Only hash the password if it has been modified or is new
-  if (!this.isModified('password')) return next();
-  
+  if (!this.isModified('password')) return;
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });

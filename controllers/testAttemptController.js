@@ -1,5 +1,6 @@
 // controllers/testAttemptController.js
 
+import mongoose from "mongoose";
 import TestAttempt from "../models/TestAttempt.js";
 import Question from "../models/Question.js";
 import Test from "../models/Test.js";
@@ -346,6 +347,80 @@ export const getResult = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Error fetching result", error: error.message });
+  }
+};
+
+// GET /api/leaderboard/:testId — rank list for a test (best attempt per user)
+export const getLeaderboard = async (req, res) => {
+  try {
+    const { testId } = req.params;
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+
+    if (!mongoose.Types.ObjectId.isValid(testId)) {
+      return res.status(400).json({ success: false, message: "Invalid testId" });
+    }
+
+    const test = await Test.findById(testId).select("title totalMarks");
+    if (!test) {
+      return res.status(404).json({ success: false, message: "Test not found" });
+    }
+
+    const rows = await TestAttempt.aggregate([
+      {
+        $match: {
+          test: new mongoose.Types.ObjectId(testId),
+          status: { $in: ["completed", "auto-submitted"] },
+        },
+      },
+      // best attempt per user: highest score, and among ties the one submitted fastest
+      { $sort: { score: -1, submittedAt: 1 } },
+      {
+        $group: {
+          _id: "$user",
+          attemptId: { $first: "$_id" },
+          score: { $first: "$score" },
+          correctCount: { $first: "$correctCount" },
+          wrongCount: { $first: "$wrongCount" },
+          startedAt: { $first: "$startedAt" },
+          submittedAt: { $first: "$submittedAt" },
+        },
+      },
+      { $sort: { score: -1, submittedAt: 1 } },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "users",
+          localField: "_id",
+          foreignField: "_id",
+          as: "userInfo",
+        },
+      },
+      { $unwind: "$userInfo" },
+      {
+        $project: {
+          _id: 0,
+          userId: "$_id",
+          attemptId: 1,
+          name: "$userInfo.name",
+          score: 1,
+          correctCount: 1,
+          wrongCount: 1,
+          timeTakenMs: { $subtract: ["$submittedAt", "$startedAt"] },
+          submittedAt: 1,
+        },
+      },
+    ]);
+
+    const leaderboard = rows.map((row, i) => ({ rank: i + 1, ...row }));
+
+    res.status(200).json({
+      success: true,
+      test: { id: test._id, title: test.title, totalMarks: test.totalMarks },
+      count: leaderboard.length,
+      data: leaderboard,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error fetching leaderboard", error: error.message });
   }
 };
 

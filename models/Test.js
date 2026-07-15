@@ -80,7 +80,9 @@ const testSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-testSchema.pre("save", function (next) {
+// Mongoose 9: pre("save") no longer receives a next() callback — the first
+// arg is a SaveOptions object. Just mutate `this` synchronously; no callback needed.
+testSchema.pre("save", function () {
   if (this.isModified("title")) {
     this.slug = this.title
       .toLowerCase()
