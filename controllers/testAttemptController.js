@@ -8,7 +8,9 @@ import Test from "../models/Test.js";
 // ---------- helpers ----------
 
 // Score an attempt from its answers and mark it completed/auto-submitted.
-const finalizeAttempt = async (attempt, status) => {
+// Exported so the cron job (cron/autoSubmitJob.js) can reuse the exact
+// same scoring logic instead of re-implementing it.
+export const finalizeAttempt = async (attempt, status) => {
   await attempt.populate("answers.question");
 
   let score = 0;

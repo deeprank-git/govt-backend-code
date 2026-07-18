@@ -25,6 +25,23 @@ import userRoutes from "./routes/userRoutes.js";
 import userAdminRoutes from "./routes/userAdminRoutes.js";
 import leaderboardRoutes from "./routes/leaderboardRoutes.js";
 
+// ✅ NEWEST MODULES (current affairs, media, pages, reports, settings, notifications, search, analytics)
+import currentAffairsRoutes from "./routes/currentAffairsRoutes.js";
+import currentAffairsAdminRoutes from "./routes/currentAffairsAdminRoutes.js";
+import mediaAdminRoutes from "./routes/mediaAdminRoutes.js";
+import pageRoutes from "./routes/pageRoutes.js";
+import pageAdminRoutes from "./routes/pageAdminRoutes.js";
+import reportAdminRoutes from "./routes/reportAdminRoutes.js";
+import settingRoutes from "./routes/settingRoutes.js";
+import settingAdminRoutes from "./routes/settingAdminRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import notificationAdminRoutes from "./routes/notificationAdminRoutes.js";
+import searchRoutes from "./routes/searchRoutes.js";
+import analyticsAdminRoutes from "./routes/analyticsAdminRoutes.js";
+
+import { UPLOAD_DIR } from "./middleware/upload.js";
+import { startAutoSubmitJob } from "./cron/autoSubmitJob.js";
+
 
 dotenv.config();
 
@@ -52,8 +69,16 @@ app.use(cors({
 
 app.use(express.json());
 
+// ✅ Serve uploaded media (images/videos/pdfs) statically
+app.use("/uploads", express.static(UPLOAD_DIR));
+
 // ✅ DB Connection
 connectDB();
+
+// ✅ Background job: catches attempts whose timer expired but were never
+// touched again (see cron/autoSubmitJob.js for why this exists alongside
+// the lazy per-request check already in testAttemptController.js).
+startAutoSubmitJob();
 
 // ✅ AUTH
 app.use('/api/auth', userRouter);
@@ -81,6 +106,34 @@ app.use("/api/admin/users", userAdminRoutes);
 
 // ✅ LEADERBOARD
 app.use("/api/leaderboard", leaderboardRoutes);
+
+// ✅ CURRENT AFFAIRS
+app.use("/api/current-affairs", currentAffairsRoutes);
+app.use("/api/admin/current-affairs", currentAffairsAdminRoutes);
+
+// ✅ MEDIA (upload)
+app.use("/api/admin/media", mediaAdminRoutes);
+
+// ✅ STATIC PAGES (About/Contact etc.)
+app.use("/api/pages", pageRoutes);
+app.use("/api/admin/pages", pageAdminRoutes);
+
+// ✅ QUESTION REPORTS (admin review side; student side lives under /api/users/me/report-question)
+app.use("/api/admin/reports", reportAdminRoutes);
+
+// ✅ SITE SETTINGS
+app.use("/api/settings", settingRoutes);
+app.use("/api/admin/settings", settingAdminRoutes);
+
+// ✅ NOTIFICATIONS
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin/notifications", notificationAdminRoutes);
+
+// ✅ GLOBAL SEARCH
+app.use("/api/search", searchRoutes);
+
+// ✅ ADMIN ANALYTICS
+app.use("/api/admin/analytics", analyticsAdminRoutes);
 
 // ✅ HEALTH CHECK
 app.get("/api/health", (req, res) => {

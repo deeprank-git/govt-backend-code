@@ -3,3 +3,7 @@ node_modules/
 
 # Ignore environment variables containing secrets
 .env
+
+# Uploaded media files (kept locally per-environment, not versioned)
+uploads/*
+!uploads/.gitkeep
