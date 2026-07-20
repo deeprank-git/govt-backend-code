@@ -14,6 +14,11 @@ const UserSchema= new mongoose.Schema({
         trim: true,
         lowercase: true
     },
+    mobile:{
+        type: String,
+        required: [true, 'Mobile number is required'],
+        trim: true
+    },
     password:{
         type: String,
         required: [true, 'Password is required']
@@ -30,6 +35,17 @@ const UserSchema= new mongoose.Schema({
     },
     lastLogin:{
         type: Date,
+    },
+    // Password reset flow — token is a sha256 hash of the value emailed to the
+    // user, never the raw token itself (so a DB leak alone can't be used to
+    // reset accounts). select:false keeps it out of default query results.
+    resetPasswordToken:{
+        type: String,
+        select: false,
+    },
+    resetPasswordExpires:{
+        type: Date,
+        select: false,
     },
 },{timestamps: true}
 );

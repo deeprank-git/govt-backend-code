@@ -1,67 +1,20 @@
 import nodemailer from 'nodemailer';
 
-// Create reusable transporter object using environment variables
-// This supports multiple email providers by changing the config
+// Gmail SMTP — free, used for now. Requires a Google Account with 2FA enabled
+// and an "App Password" (not the regular account password) in GMAIL_PASSWORD.
+// Gmail SMTP has sending-rate limits and is flagged by some providers, so it
+// should be swapped for a dedicated transactional email provider before
+// this goes to production at any real volume.
 let transporter;
 
 const initializeEmailService = () => {
-  const emailProvider = process.env.EMAIL_PROVIDER || 'smtp';
-  
-  if (emailProvider === 'gmail') {
-    // Gmail SMTP (for development/testing only)
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD, // App-specific password, not regular password
-      },
-    });
-  } else if (emailProvider === 'sendgrid') {
-    // SendGrid (production recommended)
-    transporter = nodemailer.createTransport({
-      host: 'smtp.sendgrid.net',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY,
-      },
-    });
-  } else if (emailProvider === 'postmark') {
-    // Postmark (production recommended)
-    transporter = nodemailer.createTransport({
-      host: 'smtp.postmarkapp.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.POSTMARK_SERVER_TOKEN,
-        pass: process.env.POSTMARK_SERVER_TOKEN,
-      },
-    });
-  } else if (emailProvider === 'resend') {
-    // Resend (modern API-based, production recommended)
-    // Note: Resend uses their API, not SMTP, so you'd typically use their SDK instead
-    transporter = nodemailer.createTransport({
-      host: 'smtp.resend.com',
-      port: 465,
-      secure: true,
-      auth: {
-        user: 'resend',
-        pass: process.env.RESEND_API_KEY,
-      },
-    });
-  } else {
-    // Default SMTP (generic SMTP provider)
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
-      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-  }
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASSWORD,
+    },
+  });
 };
 
 // Initialize on module load
