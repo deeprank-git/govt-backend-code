@@ -19,6 +19,29 @@ const UserSchema= new mongoose.Schema({
         required: [true, 'Mobile number is required'],
         trim: true
     },
+    username:{
+        type: String,
+        required: [true, 'Username is required'],
+        unique: true,
+        trim: true,
+        lowercase: true
+    },
+    profilePicture:{
+        type: String,
+        default: ''
+    },
+    address:{
+        type: String,
+        default: ''
+    },
+    country:{
+        type: String,
+        default: ''
+    },
+    city:{
+        type: String,
+        default: ''
+    },
     password:{
         type: String,
         required: [true, 'Password is required']

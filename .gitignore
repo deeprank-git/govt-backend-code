@@ -7,3 +7,7 @@ node_modules/
 # Uploaded media files (kept locally per-environment, not versioned)
 uploads/*
 !uploads/.gitkeep
+
+Exam Success Hub/
+
+GovtPrep-Project-Documentation.docx

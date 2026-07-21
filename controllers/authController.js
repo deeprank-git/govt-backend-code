@@ -1,8 +1,16 @@
+import fs from 'fs';
+import path from 'path';
 import User from '../models/Users.js';
 import RefreshToken from '../models/RefreshToken.js';
 import generateToken from '../utils/generateToken.js';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../utils/emailService.js';
+import { UPLOAD_DIR } from '../middleware/upload.js';
+
+// Mongo duplicate-key error (e.g. email or username already taken) —
+// surfaced as a 400 with the offending field name instead of a generic 500.
+const isDuplicateKeyError = (error) => error.code === 11000;
+const duplicateKeyField = (error) => Object.keys(error.keyPattern || {})[0] || "field";
 
 const REFRESH_TOKEN_DAYS = 30;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -21,13 +29,13 @@ const issueRefreshToken = async (userId, device = "") => {
 
 export const registerUser= async(req,res)=>{
     try{
-        const {name,email,mobile,password,role}=req.body;
+        const {name,email,mobile,username,password,role}=req.body;
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: "email already registered" });
         }
 
-        const newUser = new User({ name, email, mobile, password, role });
+        const newUser = new User({ name, email, mobile, username, password, role });
         await newUser.save();
         const token = generateToken(newUser._id, newUser.role);
         const refreshToken = await issueRefreshToken(newUser._id, req.headers["user-agent"]);
@@ -41,11 +49,15 @@ export const registerUser= async(req,res)=>{
                 name: newUser.name,
                 email: newUser.email,
                 mobile: newUser.mobile,
+                username: newUser.username,
                 role: newUser.role,
                 isActive: newUser.isActive
             }
         });
     }catch(error){
+        if (isDuplicateKeyError(error)) {
+            return res.status(400).json({ message: `${duplicateKeyField(error)} already taken` });
+        }
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 }
@@ -86,6 +98,8 @@ export const loginUser = async (req, res) => {
                 id: user._id,
                 name: user.name,
                 email: user.email,
+                username: user.username,
+                profilePicture: user.profilePicture,
                 role: user.role,
                 isActive: user.isActive
             }
@@ -227,11 +241,12 @@ export const getMe = async (req, res) => {
     res.status(200).json({ success: true, data: req.user });
 };
 
-// PUT /api/users/me — a user can update their own name/email/password.
+// PUT /api/users/me — a user can update their own profile: name/email/mobile
+// /password plus username, address, country, city and profile picture.
 // role and isActive are intentionally NOT editable here (admin-only, see below).
 export const updateMe = async (req, res) => {
     try {
-        const { name, email, mobile, password } = req.body;
+        const { name, email, mobile, username, address, country, city, password } = req.body;
 
         const user = await User.findById(req.user.id);
         if (!user) {
@@ -241,7 +256,22 @@ export const updateMe = async (req, res) => {
         if (name !== undefined) user.name = name;
         if (email !== undefined) user.email = email;
         if (mobile !== undefined) user.mobile = mobile;
+        if (username !== undefined) user.username = username;
+        if (address !== undefined) user.address = address;
+        if (country !== undefined) user.country = country;
+        if (city !== undefined) user.city = city;
         if (password) user.password = password; // pre('save') hook re-hashes automatically
+
+        // New profile picture uploaded — swap it in and best-effort clean up the old file.
+        if (req.file) {
+            const previousPicture = user.profilePicture;
+            user.profilePicture = `/uploads/${req.file.filename}`;
+
+            if (previousPicture) {
+                const previousPath = path.join(UPLOAD_DIR, path.basename(previousPicture));
+                fs.unlink(previousPath, () => {});
+            }
+        }
 
         await user.save();
 
@@ -253,12 +283,19 @@ export const updateMe = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 mobile: user.mobile,
+                username: user.username,
+                profilePicture: user.profilePicture,
+                address: user.address,
+                country: user.country,
+                city: user.city,
                 role: user.role,
                 isActive: user.isActive,
             },
         });
     } catch (error) {
-        // e.g. duplicate email
+        if (isDuplicateKeyError(error)) {
+            return res.status(400).json({ success: false, message: `${duplicateKeyField(error)} already taken` });
+        }
         res.status(500).json({ success: false, message: "Error updating profile", error: error.message });
     }
 };

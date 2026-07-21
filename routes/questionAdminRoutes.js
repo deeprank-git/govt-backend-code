@@ -3,6 +3,7 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 import authorize from "../middleware/authorize.js";
+import uploadCsv from "../middleware/uploadCsv.js";
 
 import {
   createQuestion,
@@ -10,13 +11,15 @@ import {
   deleteQuestion,
   getQuestionsAdmin,
   bulkCreateQuestions,
+  downloadBulkTemplate,
 } from "../controllers/questionController.js";
 
 const router = express.Router();
 
 router.use(authMiddleware, authorize("admin"));
 
-router.post("/bulk", bulkCreateQuestions); // 🐛 fix: was GET, now POST
+router.get("/bulk/template", downloadBulkTemplate);
+router.post("/bulk", uploadCsv.single("file"), bulkCreateQuestions);
 router.post("/", createQuestion);
 router.get("/", getQuestionsAdmin);
 router.patch("/:id", updateQuestion);

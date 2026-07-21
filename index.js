@@ -1,5 +1,5 @@
+import 'dotenv/config';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 
@@ -42,8 +42,6 @@ import analyticsAdminRoutes from "./routes/analyticsAdminRoutes.js";
 import { UPLOAD_DIR } from "./middleware/upload.js";
 import { startAutoSubmitJob } from "./cron/autoSubmitJob.js";
 
-
-dotenv.config();
 
 const app = express();
 

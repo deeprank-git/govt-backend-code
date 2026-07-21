@@ -7,18 +7,23 @@ import nodemailer from 'nodemailer';
 // this goes to production at any real volume.
 let transporter;
 
-const initializeEmailService = () => {
-  transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASSWORD,
-    },
-  });
+// Built lazily on first use rather than at module load — GMAIL_USER/GMAIL_PASSWORD
+// come from process.env, which depends on dotenv having already run. Reading them
+// eagerly at import time ties correctness to import order (this module ends up
+// loaded via routes -> controllers -> here, which can easily happen before
+// dotenv.config() does); reading them on first send avoids that entirely.
+const getTransporter = () => {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    });
+  }
+  return transporter;
 };
-
-// Initialize on module load
-initializeEmailService();
 
 /**
  * Send password reset email
@@ -28,10 +33,6 @@ initializeEmailService();
  * @returns {Promise<Object>} - Nodemailer response
  */
 export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
-  if (!transporter) {
-    throw new Error('Email service not initialized');
-  }
-
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -109,7 +110,7 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
       html: htmlContent,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await getTransporter().sendMail(mailOptions);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending password reset email:', error);
@@ -124,10 +125,6 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
  * @returns {Promise<Object>} - Nodemailer response
  */
 export const sendConfirmationEmail = async (email, confirmationUrl) => {
-  if (!transporter) {
-    throw new Error('Email service not initialized');
-  }
-
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -163,7 +160,7 @@ export const sendConfirmationEmail = async (email, confirmationUrl) => {
       html: htmlContent,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await getTransporter().sendMail(mailOptions);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending confirmation email:', error);
@@ -176,12 +173,8 @@ export const sendConfirmationEmail = async (email, confirmationUrl) => {
  * @returns {Promise<boolean>} - true if service is working
  */
 export const verifyEmailService = async () => {
-  if (!transporter) {
-    return false;
-  }
-
   try {
-    await transporter.verify();
+    await getTransporter().verify();
     return true;
   } catch (error) {
     console.error('Email service verification failed:', error);

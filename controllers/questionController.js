@@ -1,7 +1,40 @@
 // controllers/questionController.js
 
+import { parse } from "csv-parse/sync";
 import Question from "../models/Question.js";
 import Test from "../models/Test.js";
+
+// Columns the bulk-upload CSV template ships with, and that bulkCreateQuestions
+// expects on the way back in. correctAnswer is 1-based here (matches option1..4)
+// since that's what a non-technical admin filling the sheet in Excel expects —
+// it's converted to the stored 0-based index during parsing.
+const CSV_COLUMNS = [
+  "test",
+  "questionText",
+  "option1",
+  "option2",
+  "option3",
+  "option4",
+  "correctAnswer",
+  "marks",
+  "negativeMarks",
+  "explanation",
+  "order",
+];
+
+const CSV_EXAMPLE_ROW = [
+  "PASTE_TEST_ID_HERE",
+  "What is the capital of India?",
+  "Mumbai",
+  "New Delhi",
+  "Kolkata",
+  "Chennai",
+  "2",
+  "1",
+  "0",
+  "New Delhi is the capital of India.",
+  "",
+];
 
 // 🔁 Recalculate a Test's totalQuestions & totalMarks from its active questions.
 // Called after any question create/update/delete so Test stays in sync,
@@ -166,59 +199,104 @@ export const getQuestionsAdmin = async (req, res) => {
   }
 };
 
-// BULK CREATE QUESTIONS
+// GET /api/admin/questions/bulk/template — downloadable sample CSV with the
+// expected header row, so a non-technical admin can fill it in and re-upload
+// instead of having to write raw JSON.
+export const downloadBulkTemplate = (req, res) => {
+  const csv = [CSV_COLUMNS.join(","), CSV_EXAMPLE_ROW.join(",")].join("\n");
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", 'attachment; filename="questions-template.csv"');
+  res.status(200).send(csv);
+};
+
+// BULK CREATE QUESTIONS — from an uploaded CSV file (field name "file")
 export const bulkCreateQuestions = async (req, res) => {
   try {
-    const questions = req.body;
-
-    // 1. Basic validation
-    if (!Array.isArray(questions) || questions.length === 0) {
+    if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: "Request body must be a non-empty array",
+        message: "CSV file is required (field name: file)",
       });
     }
 
-    // 2. Validate each question, and auto-assign order per test
-    const nextOrderByTest = {};
-
-    for (let i = 0; i < questions.length; i++) {
-      const q = questions[i];
-
-      if (!q.questionText || !q.options || q.correctAnswer === undefined || !q.test) {
-        return res.status(400).json({
-          success: false,
-          message: `Missing required fields in question at index ${i}`,
-        });
-      }
-
-      if (!Array.isArray(q.options) || q.options.length !== 4) {
-        return res.status(400).json({
-          success: false,
-          message: `Question at index ${i} must have exactly 4 options`,
-        });
-      }
-
-      if (q.correctAnswer < 0 || q.correctAnswer > 3) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid correctAnswer index at question ${i}`,
-        });
-      }
-
-      if (q.order === undefined || q.order === null) {
-        if (nextOrderByTest[q.test] === undefined) {
-          nextOrderByTest[q.test] = await Question.countDocuments({ test: q.test });
-        }
-        q.order = nextOrderByTest[q.test];
-        nextOrderByTest[q.test] += 1;
-      }
+    let rows;
+    try {
+      rows = parse(req.file.buffer, {
+        columns: true,
+        trim: true,
+        skip_empty_lines: true,
+      });
+    } catch (parseError) {
+      return res.status(400).json({
+        success: false,
+        message: "Could not parse CSV file",
+        error: parseError.message,
+      });
     }
 
-    // 3. Insert all questions
+    if (rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "CSV file has no data rows",
+      });
+    }
+
+    // 1. Validate each row and build the question objects to insert.
+    //    rowNumber accounts for the header row so it matches what the admin
+    //    sees when they open the CSV in a spreadsheet app.
+    const nextOrderByTest = {};
+    const questions = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber = i + 2;
+
+      const options = [row.option1, row.option2, row.option3, row.option4];
+
+      if (!row.test || !row.questionText || options.some((opt) => !opt)) {
+        return res.status(400).json({
+          success: false,
+          message: `Row ${rowNumber}: test, questionText and all 4 options are required`,
+        });
+      }
+
+      const correctAnswer = Number(row.correctAnswer) - 1; // CSV is 1-based
+      if (!Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer > 3) {
+        return res.status(400).json({
+          success: false,
+          message: `Row ${rowNumber}: correctAnswer must be a number from 1 to 4`,
+        });
+      }
+
+      let order;
+      if (row.order !== undefined && row.order !== "") {
+        order = Number(row.order);
+      } else {
+        if (nextOrderByTest[row.test] === undefined) {
+          nextOrderByTest[row.test] = await Question.countDocuments({ test: row.test });
+        }
+        order = nextOrderByTest[row.test];
+        nextOrderByTest[row.test] += 1;
+      }
+
+      questions.push({
+        test: row.test,
+        questionText: row.questionText,
+        options: options.map((text) => ({ text })),
+        correctAnswer,
+        marks: row.marks !== undefined && row.marks !== "" ? Number(row.marks) : 1,
+        negativeMarks:
+          row.negativeMarks !== undefined && row.negativeMarks !== "" ? Number(row.negativeMarks) : 0,
+        explanation: row.explanation || "",
+        order,
+      });
+    }
+
+    // 2. Insert all questions
     const insertedQuestions = await Question.insertMany(questions);
 
-    // 4. Recalculate totals for every affected test
+    // 3. Recalculate totals for every affected test
     const affectedTestIds = [...new Set(insertedQuestions.map((q) => String(q.test)))];
     await Promise.all(affectedTestIds.map((testId) => recalcTestTotals(testId)));
 
