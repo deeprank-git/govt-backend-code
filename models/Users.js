@@ -19,10 +19,13 @@ const UserSchema= new mongoose.Schema({
         required: [true, 'Mobile number is required'],
         trim: true
     },
+    // Not required at registration time — the user picks this afterwards
+    // via the profile-completion step (PUT /api/users/me). sparse:true so
+    // multiple accounts without a username yet don't collide on the unique index.
     username:{
         type: String,
-        required: [true, 'Username is required'],
         unique: true,
+        sparse: true,
         trim: true,
         lowercase: true
     },

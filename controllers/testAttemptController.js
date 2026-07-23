@@ -13,6 +13,18 @@ import Test from "../models/Test.js";
 export const finalizeAttempt = async (attempt, status) => {
   await attempt.populate("answers.question");
 
+  // Fetched independently (rather than via attempt.populate("test", ...)) so this
+  // doesn't clobber a `test` population with different fields already present on
+  // `attempt` (e.g. getResult populates test with title/duration/totalMarks before
+  // this can run via the lazy auto-submit path).
+  const test = await Test.findById(attempt.test?._id || attempt.test).select(
+    "negativeMarking negativeMarksPerQuestion"
+  );
+
+  const negativePerQuestion = test?.negativeMarking
+    ? test.negativeMarksPerQuestion || 0
+    : 0;
+
   let score = 0;
   let correctCount = 0;
   let wrongCount = 0;
@@ -23,7 +35,7 @@ export const finalizeAttempt = async (attempt, status) => {
       score += ans.question.marks || 0;
       correctCount += 1;
     } else {
-      score -= ans.question.negativeMarks || 0;
+      score -= negativePerQuestion;
       wrongCount += 1;
     }
   });

@@ -1,0 +1,1859 @@
+{
+  "info": {
+    "_postman_id": "ad7ea832-c0e3-4046-9deb-153d85d99585",
+    "name": "GovtPrep Backend API",
+    "description": "Complete Postman collection for testing GovtPrep backend API endpoints. Matches the current backend routes/controllers exactly (excludes the Exam Success Hub frontend). No pre-request or test scripts are included — responses shown are exactly what the backend returns, nothing injected by Postman.\n\nAuth: set `token` (a student/instructor JWT from Login) and `admin_token` (an admin JWT) as collection variables — grab both from the Login response's `token` field for the respective account.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "35140089"
+  },
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"mobile\": \"9876543210\",\n  \"username\": \"johndoe\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "refresh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Forgot/reset password flow lives in the separate \"GovtPrep — Forgot & Reset Password\" collection."
+    },
+    {
+      "name": "2. User Profile",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Jane Doe",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "jane@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "mobile",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "username",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "address",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "country",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "city",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "password",
+                  "value": "",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "profilePicture",
+                  "type": "file",
+                  "src": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Report Question",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"question_id_here\",\n  \"reason\": \"The correct answer should be option B, not A\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/users/me/report-question",
+              "host": ["{{base_url}}"],
+              "path": ["api", "users", "me", "report-question"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Categories",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/categories/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "categories", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Category (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"UPSC\",\n  \"description\": \"Union Public Service Commission exams\",\n  \"image\": \"upsc-image.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/categories",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "categories"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/categories/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "categories", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/categories/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "categories", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Delete is a soft-delete (isActive set to false)."
+    },
+    {
+      "name": "4. Test Series",
+      "item": [
+        {
+          "name": "Get All Test Series",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/test-series",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-series"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Admin token only — ignored for student/instructor"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Admin token only — ignored for student/instructor"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Test Series by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/test-series/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-series", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Test Series (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"SSC CGL Full Course\",\n  \"description\": \"Complete preparation for SSC CGL\",\n  \"category\": \"category_id_here\",\n  \"image\": \"\",\n  \"isPublished\": false,\n  \"isPaid\": false,\n  \"price\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/test-series",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "test-series"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Test Series (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPublished\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/test-series/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "test-series", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Test Series (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/test-series/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "test-series", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Delete is a soft-delete (isActive/isPublished set to false)."
+    },
+    {
+      "name": "5. Tests",
+      "item": [
+        {
+          "name": "Get All Tests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tests"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "testSeries",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Admin token only — ignored for student/instructor"
+                },
+                {
+                  "key": "isPublished",
+                  "value": "true",
+                  "disabled": true,
+                  "description": "Admin token only — ignored for student/instructor"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Test by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/tests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "tests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Test (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"SSC CGL Tier 1 - Mock Test 1\",\n  \"category\": \"category_id_here\",\n  \"testSeries\": \"series_id_here\",\n  \"duration\": 120,\n  \"negativeMarking\": true,\n  \"negativeMarksPerQuestion\": 0.5,\n  \"marksPerQuestion\": 2,\n  \"isPublished\": false,\n  \"isPaid\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/tests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "tests"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Test (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPublished\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/tests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "tests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Test (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/tests/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "tests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "totalQuestions and totalMarks are auto-calculated from the test's active questions — no need to set them on create/update. Delete is a soft-delete (isActive/isPublished set to false)."
+    },
+    {
+      "name": "6. Questions",
+      "item": [
+        {
+          "name": "Get Questions by Test (Student)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/questions?test=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "questions"],
+              "query": [
+                {
+                  "key": "test",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Questions (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/questions?test=",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "questions"],
+              "query": [
+                {
+                  "key": "test",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Question (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"test\": \"test_id_here\",\n  \"questionText\": \"What is the capital of India?\",\n  \"options\": [\n    { \"text\": \"Mumbai\" },\n    { \"text\": \"New Delhi\" },\n    { \"text\": \"Bangalore\" },\n    { \"text\": \"Kolkata\" }\n  ],\n  \"correctAnswer\": 1,\n  \"marks\": 2,\n  \"explanation\": \"New Delhi is the capital of India.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/questions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "questions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Question (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"marks\": 3\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/questions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "questions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Question (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/questions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "questions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Bulk Upload Template (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/questions/bulk/template",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "questions", "bulk", "template"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Upload Questions (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/questions/bulk",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "questions", "bulk"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "correctAnswer is a 0-based index into options (0=first option). Delete is a soft-delete (isActive set to false). Bulk upload expects a CSV with the columns from the template download (correctAnswer there is 1-based, converted server-side)."
+    },
+    {
+      "name": "7. Test Attempts (Core Testing Flow)",
+      "item": [
+        {
+          "name": "Start Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"testId\": \"test_id_here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/test-attempts/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-attempts", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Attempts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/test-attempts/my-attempts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-attempts", "my-attempts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current Question",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/test-attempts/:attemptId/question/:index",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-attempts", ":attemptId", "question", ":index"],
+              "variable": [
+                {
+                  "key": "attemptId",
+                  "value": ""
+                },
+                {
+                  "key": "index",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Save Answer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"attemptId\": \"attempt_id_here\",\n  \"questionId\": \"question_id_here\",\n  \"selectedOption\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/test-attempts/save-answer",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-attempts", "save-answer"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"attemptId\": \"attempt_id_here\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/test-attempts/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-attempts", "submit"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Test Result",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/test-attempts/:attemptId/result",
+              "host": ["{{base_url}}"],
+              "path": ["api", "test-attempts", ":attemptId", "result"],
+              "variable": [
+                {
+                  "key": "attemptId",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Save Answer and Submit Test take the attempt id in the JSON body (attemptId), not in the URL path."
+    },
+    {
+      "name": "8. Leaderboard",
+      "item": [
+        {
+          "name": "Get Test Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/leaderboard/:testId?limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "leaderboard", ":testId"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "capped at 100 server-side"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "testId",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Current Affairs",
+      "item": [
+        {
+          "name": "Get Current Affairs Articles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/current-affairs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "current-affairs"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-07-21",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "disabled": true
+                },
+                {
+                  "key": "isPublished",
+                  "value": "false",
+                  "disabled": true,
+                  "description": "Admin token only — used to preview drafts"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Article by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/current-affairs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "current-affairs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Article (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Union Budget 2026-27 Announced\",\n  \"content\": \"Full details of the budget announcement...\",\n  \"summary\": \"Key highlights of the Union Budget\",\n  \"date\": \"2026-07-21\",\n  \"category\": \"Economics\",\n  \"tags\": [\"budget\", \"economics\", \"government\"],\n  \"image\": \"image-url\",\n  \"isPublished\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/current-affairs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "current-affairs"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Article (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isPublished\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/current-affairs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "current-affairs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Article (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/current-affairs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "current-affairs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Delete is a soft-delete (isActive/isPublished set to false)."
+    },
+    {
+      "name": "10. Media Upload",
+      "item": [
+        {
+          "name": "Upload File (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "usedInRefType",
+                  "value": "question",
+                  "type": "text"
+                },
+                {
+                  "key": "usedInRefId",
+                  "value": "question_id",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/media/upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "media", "upload"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Uploaded Files (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/media",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "media"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "image",
+                  "disabled": true
+                },
+                {
+                  "key": "usedInRefType",
+                  "value": "question",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Media (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/media/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "media", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Serve Uploaded File",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/uploads/filename.jpg",
+              "host": ["{{base_url}}"],
+              "path": ["uploads", "filename.jpg"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Accepted file types: image/*, video/*, application/pdf. Max 20MB. Delete is a hard delete (removes the DB record and the file on disk)."
+    },
+    {
+      "name": "11. Static Pages",
+      "item": [
+        {
+          "name": "Get Public Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pages/:slug",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pages", ":slug"],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "about-us"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Pages (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/pages",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "pages"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "draft",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Page (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"privacy-policy\",\n  \"title\": \"Privacy Policy\",\n  \"content\": \"Our privacy policy details...\",\n  \"status\": \"draft\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/pages",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "pages"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Page (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"published\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/pages/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "pages", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Page (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/pages/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "pages", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Delete here is a hard delete (Page has no soft-delete flag)."
+    },
+    {
+      "name": "12. Search",
+      "item": [
+        {
+          "name": "Global Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/search?q=SSC",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "SSC"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "13. Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/me?limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", "me"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/notifications/:id/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications", ":id", "read"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Notification (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Starting Soon\",\n  \"message\": \"UPSC Mock starts in 1 hour\",\n  \"type\": \"reminder\",\n  \"userId\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/notifications",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "notifications"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Notifications (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/notifications?limit=100",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "notifications"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "type must be one of: info, reminder, result, offer, system. Omit userId (or leave it null) to broadcast to all users."
+    },
+    {
+      "name": "14. Admin - Users",
+      "item": [
+        {
+          "name": "List Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "users"],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "student",
+                  "disabled": true
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Block/Unblock User (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isActive\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change User Role (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"instructor\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "users", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "List Users has no pagination server-side (role/isActive filters only — every matching user is returned). Block/Unblock and Change Role hit the same PATCH endpoint — it accepts role, isActive, name, email, mobile in any combination."
+    },
+    {
+      "name": "15. Admin - Analytics",
+      "item": [
+        {
+          "name": "Get Analytics Overview (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/analytics/overview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "analytics", "overview"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "16. Admin - Reports",
+      "item": [
+        {
+          "name": "Get Question Reports (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/reports?status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "reports"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Report (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"resolved\",\n  \"adminNote\": \"Answer verified and corrected\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/reports/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "reports", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "status must be one of: pending, reviewed, resolved."
+    },
+    {
+      "name": "17. Settings",
+      "item": [
+        {
+          "name": "Get Site Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/settings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "settings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Settings (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"siteName\": \"GovtPrep\",\n  \"logo\": \"\",\n  \"contactEmail\": \"support@govtprep.com\",\n  \"socialLinks\": {\n    \"facebook\": \"\",\n    \"twitter\": \"\",\n    \"instagram\": \"\"\n  },\n  \"maintenanceMode\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/admin/settings",
+              "host": ["{{base_url}}"],
+              "path": ["api", "admin", "settings"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Settings is a singleton document — there is only ever one. socialLinks is a free-form object (Mixed type)."
+    },
+    {
+      "name": "18. Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    }
+  ]
+}

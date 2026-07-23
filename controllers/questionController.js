@@ -17,7 +17,6 @@ const CSV_COLUMNS = [
   "option4",
   "correctAnswer",
   "marks",
-  "negativeMarks",
   "explanation",
   "order",
 ];
@@ -31,7 +30,6 @@ const CSV_EXAMPLE_ROW = [
   "Chennai",
   "2",
   "1",
-  "0",
   "New Delhi is the capital of India.",
   "",
 ];
@@ -286,8 +284,6 @@ export const bulkCreateQuestions = async (req, res) => {
         options: options.map((text) => ({ text })),
         correctAnswer,
         marks: row.marks !== undefined && row.marks !== "" ? Number(row.marks) : 1,
-        negativeMarks:
-          row.negativeMarks !== undefined && row.negativeMarks !== "" ? Number(row.negativeMarks) : 0,
         explanation: row.explanation || "",
         order,
       });

@@ -27,15 +27,18 @@ const issueRefreshToken = async (userId, device = "") => {
     return token;
 };
 
+// Registration only collects the essentials. username, profilePicture,
+// address, country and city are filled in afterwards via PUT /api/users/me
+// (see updateMe below) as a separate "complete your profile" step.
 export const registerUser= async(req,res)=>{
     try{
-        const {name,email,mobile,username,password,role}=req.body;
+        const {name,email,mobile,password,role}=req.body;
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: "email already registered" });
         }
 
-        const newUser = new User({ name, email, mobile, username, password, role });
+        const newUser = new User({ name, email, mobile, password, role });
         await newUser.save();
         const token = generateToken(newUser._id, newUser.role);
         const refreshToken = await issueRefreshToken(newUser._id, req.headers["user-agent"]);
@@ -49,7 +52,6 @@ export const registerUser= async(req,res)=>{
                 name: newUser.name,
                 email: newUser.email,
                 mobile: newUser.mobile,
-                username: newUser.username,
                 role: newUser.role,
                 isActive: newUser.isActive
             }

@@ -42,11 +42,6 @@ const questionSchema = new mongoose.Schema(
       default: 1,
     },
 
-    negativeMarks: {
-      type: Number,
-      default: 0,
-    },
-
     order: {
       type: Number,
       default: 0,
