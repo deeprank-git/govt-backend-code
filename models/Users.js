@@ -1,96 +1,110 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
-const UserSchema= new mongoose.Schema({
-    name:{
-        type: String,
-        required:[true, 'Name is required'],
-        trim: true
+const UserSchema = new mongoose.Schema(
+  {
+    // Optional during registration. User can update it later.
+    name: {
+      type: String,
+      trim: true,
+      default: "",
     },
-    email:{
-        type: String,
-        required: [true,'Email is required'],
-        unique: true,
-        trim: true,
-        lowercase: true
+
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
-    mobile:{
-        type: String,
-        required: [true, 'Mobile number is required'],
-        trim: true
+
+    // Optional during registration.
+    mobile: {
+      type: String,
+      trim: true,
+      default: "",
     },
-    // Not required at registration time — the user picks this afterwards
-    // via the profile-completion step (PUT /api/users/me). sparse:true so
-    // multiple accounts without a username yet don't collide on the unique index.
-    username:{
-        type: String,
-        unique: true,
-        sparse: true,
-        trim: true,
-        lowercase: true
+
+    // Optional during registration. User can set it later.
+    // sparse:true allows multiple users with no username.
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
     },
-    profilePicture:{
-        type: String,
-        default: ''
+
+    profilePicture: {
+      type: String,
+      default: "",
     },
-    address:{
-        type: String,
-        default: ''
+
+    address: {
+      type: String,
+      default: "",
     },
-    country:{
-        type: String,
-        default: ''
+
+    country: {
+      type: String,
+      default: "",
     },
-    city:{
-        type: String,
-        default: ''
+
+    city: {
+      type: String,
+      default: "",
     },
-    password:{
-        type: String,
-        required: [true, 'Password is required']
+
+    password: {
+      type: String,
+      required: [true, "Password is required"],
     },
-    role:{
-        type: String,
-        required: [true, 'Role is required'],
-        enum: ['student','instructor','admin'],
-        default: 'student'
+
+    role: {
+      type: String,
+      enum: ["student", "instructor", "admin"],
+      default: "student",
     },
-    isActive:{
-        type: Boolean,
-        default: true
+
+    isActive: {
+      type: Boolean,
+      default: true,
     },
-    lastLogin:{
-        type: Date,
+
+    lastLogin: {
+      type: Date,
     },
-    // Password reset flow — token is a sha256 hash of the value emailed to the
-    // user, never the raw token itself (so a DB leak alone can't be used to
-    // reset accounts). select:false keeps it out of default query results.
-    resetPasswordToken:{
-        type: String,
-        select: false,
+
+    // Password reset fields
+    // Stores the hashed reset token only.
+    resetPasswordToken: {
+      type: String,
+      select: false,
     },
-    resetPasswordExpires:{
-        type: Date,
-        select: false,
+
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
     },
-},{timestamps: true}
+  },
+  {
+    timestamps: true,
+  }
 );
 
-
-// Middleware: Automatically hash the password before saving it to the database
-// Mongoose 9: pre("save") no longer receives a next() callback — the first
-// arg is a SaveOptions object, so `return next()` would throw. Just return early instead.
-UserSchema.pre('save', async function () {
-  // Only hash the password if it has been modified or is new
-  if (!this.isModified('password')) return;
+// Automatically hash password before saving
+UserSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+// Compare entered password with hashed password
 UserSchema.methods.comparePassword = async function (enteredPassword) {
-   return await bcrypt.compare(enteredPassword, this.password);
+  return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const User=mongoose.model('User',UserSchema);
+const User = mongoose.model("User", UserSchema);
+
 export default User;
