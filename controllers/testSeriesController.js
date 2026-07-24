@@ -82,7 +82,9 @@ export const createTestSeries = async (req, res) => {
     const payload = { ...rest, createdBy: req.user.id };
 
     if (importantDates !== undefined) payload.importantDates = JSON.parse(importantDates);
-    if (req.file) payload.image = `/uploads/${req.file.filename}`;
+    if (req.files?.image?.[0]) payload.image = `/uploads/${req.files.image[0].filename}`;
+    if (req.files?.notificationPdf?.[0])
+      payload.notificationPdf = `/uploads/${req.files.notificationPdf[0].filename}`;
 
     const series = await TestSeries.create(payload);
 
@@ -108,7 +110,7 @@ export const updateTestSeries = async (req, res) => {
 
     if (importantDates !== undefined) payload.importantDates = JSON.parse(importantDates);
 
-    if (req.file) {
+    if (req.files?.image?.[0] || req.files?.notificationPdf?.[0]) {
       const existing = await TestSeries.findById(req.params.id);
       if (!existing) {
         return res.status(404).json({
@@ -116,9 +118,17 @@ export const updateTestSeries = async (req, res) => {
           message: "Test Series not found",
         });
       }
-      payload.image = `/uploads/${req.file.filename}`;
-      if (existing.image) {
-        fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.image)), () => {});
+      if (req.files.image?.[0]) {
+        payload.image = `/uploads/${req.files.image[0].filename}`;
+        if (existing.image) {
+          fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.image)), () => {});
+        }
+      }
+      if (req.files.notificationPdf?.[0]) {
+        payload.notificationPdf = `/uploads/${req.files.notificationPdf[0].filename}`;
+        if (existing.notificationPdf) {
+          fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.notificationPdf)), () => {});
+        }
       }
     }
 
