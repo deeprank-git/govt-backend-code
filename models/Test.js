@@ -1,5 +1,25 @@
 import mongoose from "mongoose";
 
+const sectionSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  no_of_questions: {
+    type: Number,
+    required: true,
+  },
+  no_of_marks: {
+    type: Number,
+    required: true,
+  },
+  duration: {
+    type: Number,
+    required: true,
+  },
+});
+
 const testSchema = new mongoose.Schema(
   {
     title: {
@@ -18,7 +38,7 @@ const testSchema = new mongoose.Schema(
     testSeries: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "TestSeries",
-      required: false,
+      required: true,
     },
 
     category: {
@@ -42,19 +62,9 @@ const testSchema = new mongoose.Schema(
       default: 0,
     },
 
-    negativeMarking: {
-      type: Boolean,
-      default: false,
-    },
-
-    negativeMarksPerQuestion: {
-      type: Number,
-      default: 0,
-    },
-
-    marksPerQuestion: {
-      type: Number,
-      default: 1,
+    sections: {
+      type: [sectionSchema],
+      default: [],
     },
 
     isActive: {

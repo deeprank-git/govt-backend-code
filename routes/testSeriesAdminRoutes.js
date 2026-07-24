@@ -1,6 +1,7 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 import authorize from "../middleware/authorize.js";
+import upload from "../middleware/upload.js";
 
 import {
   createTestSeries,
@@ -12,8 +13,8 @@ const router = express.Router();
 
 router.use(authMiddleware, authorize("admin"));
 
-router.post("/", createTestSeries);
-router.patch("/:id", updateTestSeries);
+router.post("/", upload.single("image"), createTestSeries);
+router.patch("/:id", upload.single("image"), updateTestSeries);
 router.delete("/:id", deleteTestSeries);
 
 export default router;
