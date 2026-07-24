@@ -40,7 +40,7 @@ export const finalizeAttempt = async (attempt, status) => {
     }
   });
 
-  attempt.score = score;
+  attempt.score = Math.round(score * 100) / 100;
   attempt.correctCount = correctCount;
   attempt.wrongCount = wrongCount;
   attempt.status = status;
