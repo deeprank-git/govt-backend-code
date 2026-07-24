@@ -17,12 +17,12 @@ export const finalizeAttempt = async (attempt, status) => {
   // doesn't clobber a `test` population with different fields already present on
   // `attempt` (e.g. getResult populates test with title/duration/totalMarks before
   // this can run via the lazy auto-submit path).
-  const test = await Test.findById(attempt.test?._id || attempt.test).select(
-    "negativeMarking negativeMarksPerQuestion"
-  );
+  const test = await Test.findById(attempt.test?._id || attempt.test)
+    .select("testSeries")
+    .populate("testSeries", "negativeMarking negativeMarksPerQuestion");
 
-  const negativePerQuestion = test?.negativeMarking
-    ? test.negativeMarksPerQuestion || 0
+  const negativePerQuestion = test?.testSeries?.negativeMarking
+    ? test.testSeries.negativeMarksPerQuestion || 0
     : 0;
 
   let score = 0;
@@ -299,7 +299,11 @@ export const submitTest = async (req, res) => {
 // GET RESULT (detailed, question-by-question review)
 export const getResult = async (req, res) => {
   try {
-    const attempt = await TestAttempt.findById(req.params.id).populate("test", "title duration totalMarks totalQuestions negativeMarking");
+    const attempt = await TestAttempt.findById(req.params.id).populate({
+      path: "test",
+      select: "title duration totalMarks totalQuestions testSeries",
+      populate: { path: "testSeries", select: "negativeMarking negativeMarksPerQuestion" },
+    });
     if (!attempt) {
       return res.status(404).json({ success: false, message: "Attempt not found" });
     }

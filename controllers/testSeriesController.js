@@ -1,6 +1,9 @@
 // controllers/testSeriesController.js
 
+import fs from "fs";
+import path from "path";
 import TestSeries from "../models/TestSeries.js";
+import { UPLOAD_DIR } from "../middleware/upload.js";
 
 // ✅ GET all (filter by category optional)
 // Students/instructors only see published + active series. Admin sees all.
@@ -75,7 +78,13 @@ export const getTestSeriesById = async (req, res) => {
 // ✅ CREATE
 export const createTestSeries = async (req, res) => {
   try {
-    const series = await TestSeries.create({ ...req.body, createdBy: req.user.id });
+    const { importantDates, ...rest } = req.body;
+    const payload = { ...rest, createdBy: req.user.id };
+
+    if (importantDates !== undefined) payload.importantDates = JSON.parse(importantDates);
+    if (req.file) payload.image = `/uploads/${req.file.filename}`;
+
+    const series = await TestSeries.create(payload);
 
     res.status(201).json({
       success: true,
@@ -94,7 +103,26 @@ export const createTestSeries = async (req, res) => {
 // ✅ UPDATE
 export const updateTestSeries = async (req, res) => {
   try {
-    const updated = await TestSeries.findByIdAndUpdate(req.params.id, req.body, {
+    const { importantDates, ...rest } = req.body;
+    const payload = { ...rest };
+
+    if (importantDates !== undefined) payload.importantDates = JSON.parse(importantDates);
+
+    if (req.file) {
+      const existing = await TestSeries.findById(req.params.id);
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          message: "Test Series not found",
+        });
+      }
+      payload.image = `/uploads/${req.file.filename}`;
+      if (existing.image) {
+        fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.image)), () => {});
+      }
+    }
+
+    const updated = await TestSeries.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true,
     });

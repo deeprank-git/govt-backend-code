@@ -56,6 +56,26 @@ const testSeriesSchema = new mongoose.Schema(
       default: 0,
     },
 
+    importantDates: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+
+    negativeMarking: {
+      type: Boolean,
+      default: false,
+    },
+
+    negativeMarksPerQuestion: {
+      type: Number,
+      default: 0,
+    },
+
+    marksPerQuestion: {
+      type: Number,
+      default: 1,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
