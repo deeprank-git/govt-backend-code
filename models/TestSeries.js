@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { slugify } from "../utils/slugify.js";
 
 const testSeriesSchema = new mongoose.Schema(
   {
@@ -103,11 +104,19 @@ const testSeriesSchema = new mongoose.Schema(
 // arg is a SaveOptions object. Just mutate `this` synchronously; no callback needed.
 testSeriesSchema.pre("save", function () {
   if (this.isModified("name")) {
-    this.slug = this.name
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w-]+/g, "");
+    this.slug = slugify(this.name);
   }
+});
+
+// findByIdAndUpdate/findOneAndUpdate skip pre("save"), so slug would otherwise
+// go stale on rename — regenerate it here whenever `name` is part of the update.
+testSeriesSchema.pre("findOneAndUpdate", function () {
+  const update = this.getUpdate();
+  const name = update.name ?? update.$set?.name;
+  if (!name) return;
+  const slug = slugify(name);
+  if (update.$set) update.$set.slug = slug;
+  else update.slug = slug;
 });
 
 export default mongoose.model("TestSeries", testSeriesSchema);

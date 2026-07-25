@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { slugify } from "../utils/slugify.js";
 
 const sectionSchema = new mongoose.Schema({
   name: {
@@ -41,10 +42,15 @@ const testSchema = new mongoose.Schema(
       required: true,
     },
 
-    category: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      required: true,
+    paperType: {
+      type: String,
+      enum: ["mock", "previous_year"],
+      default: "mock",
+    },
+
+    // Only meaningful when paperType === "previous_year"
+    examDate: {
+      type: Date,
     },
 
     duration: {
@@ -58,6 +64,13 @@ const testSchema = new mongoose.Schema(
     },
 
     totalMarks: {
+      type: Number,
+      default: 0,
+    },
+
+    // Denormalized count of TestAttempt docs created for this test, incremented
+    // in testAttemptController.startTest — same pattern as TestSeries.totalTests.
+    attemptsCount: {
       type: Number,
       default: 0,
     },
@@ -95,11 +108,19 @@ const testSchema = new mongoose.Schema(
 // arg is a SaveOptions object. Just mutate `this` synchronously; no callback needed.
 testSchema.pre("save", function () {
   if (this.isModified("title")) {
-    this.slug = this.title
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w-]+/g, "");
+    this.slug = slugify(this.title);
   }
+});
+
+// findByIdAndUpdate/findOneAndUpdate skip pre("save"), so slug would otherwise
+// go stale on rename — regenerate it here whenever `title` is part of the update.
+testSchema.pre("findOneAndUpdate", function () {
+  const update = this.getUpdate();
+  const title = update.title ?? update.$set?.title;
+  if (!title) return;
+  const slug = slugify(title);
+  if (update.$set) update.$set.slug = slug;
+  else update.slug = slug;
 });
 
 export default mongoose.model("Test", testSchema);

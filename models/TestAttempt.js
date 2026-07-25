@@ -63,4 +63,13 @@ const testAttemptSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Enforces "at most one in-progress attempt per user/test" at the DB level —
+// closes the race condition where two near-simultaneous /start requests could
+// both pass the "no in-progress attempt exists yet" check and each create one
+// (retakes are unaffected: this only applies while status is "in-progress").
+testAttemptSchema.index(
+  { user: 1, test: 1 },
+  { unique: true, partialFilterExpression: { status: "in-progress" } }
+);
+
 export default mongoose.model("TestAttempt", testAttemptSchema);

@@ -31,7 +31,7 @@ export const globalSearch = async (req, res) => {
         .lean(),
 
       Test.find({ title: regex, isActive: true, isPublished: true })
-        .select("title description category testSeries duration")
+        .select("title description testSeries duration")
         .limit(PER_TYPE_LIMIT)
         .lean(),
 

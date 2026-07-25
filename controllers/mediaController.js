@@ -2,6 +2,7 @@
 
 import fs from "fs";
 import Media from "../models/Media.js";
+import { toUploadUrl } from "../middleware/upload.js";
 
 // helper: guess our simplified `type` enum from the mime type
 const resolveType = (mimeType = "") => {
@@ -20,7 +21,7 @@ export const uploadMedia = async (req, res) => {
     const { usedInRefType, usedInRefId } = req.body;
 
     const media = await Media.create({
-      url: `/uploads/${req.file.filename}`,
+      url: toUploadUrl(req.file),
       filePath: req.file.path,
       originalName: req.file.originalname,
       mimeType: req.file.mimetype,

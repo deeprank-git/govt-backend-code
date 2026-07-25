@@ -10,6 +10,7 @@ import Test from "../models/Test.js";
 // it's converted to the stored 0-based index during parsing.
 const CSV_COLUMNS = [
   "test",
+  "section",
   "questionText",
   "option1",
   "option2",
@@ -23,6 +24,7 @@ const CSV_COLUMNS = [
 
 const CSV_EXAMPLE_ROW = [
   "PASTE_TEST_ID_HERE",
+  "General Awareness",
   "What is the capital of India?",
   "Mumbai",
   "New Delhi",
@@ -53,7 +55,7 @@ const recalcTestTotals = async (testId) => {
 // CREATE
 export const createQuestion = async (req, res) => {
   try {
-    const { test } = req.body;
+    const { test, section } = req.body;
 
     if (!test) {
       return res.status(400).json({
@@ -61,11 +63,31 @@ export const createQuestion = async (req, res) => {
         message: "test (Test ID) is required",
       });
     }
+    if (!section) {
+      return res.status(400).json({
+        success: false,
+        message: "section (section ID) is required",
+      });
+    }
 
-    // auto-assign order as next in sequence for this test, unless explicitly given
+    const testDoc = await Test.findById(test);
+    if (!testDoc) {
+      return res.status(400).json({
+        success: false,
+        message: "test not found",
+      });
+    }
+    if (!testDoc.sections.id(section)) {
+      return res.status(400).json({
+        success: false,
+        message: "section does not belong to this test",
+      });
+    }
+
+    // auto-assign order as next in sequence within this test's section, unless explicitly given
     let order = req.body.order;
     if (order === undefined || order === null) {
-      const count = await Question.countDocuments({ test });
+      const count = await Question.countDocuments({ test, section });
       order = count;
     }
 
@@ -159,10 +181,10 @@ export const getQuestionsByTest = async (req, res) => {
       });
     }
 
-    const questions = await Question.find({
-      test: req.query.test,
-      isActive: true,
-    })
+    const filter = { test: req.query.test, isActive: true };
+    if (req.query.section) filter.section = req.query.section;
+
+    const questions = await Question.find(filter)
       .select("-correctAnswer -explanation")
       .sort({ order: 1, createdAt: 1 });
 
@@ -185,6 +207,7 @@ export const getQuestionsAdmin = async (req, res) => {
   try {
     const filter = {};
     if (req.query.test) filter.test = req.query.test;
+    if (req.query.section) filter.section = req.query.section;
 
     const questions = await Question.find(filter).sort({ order: 1, createdAt: 1 });
     res.json({ success: true, count: questions.length, data: questions });
@@ -243,7 +266,8 @@ export const bulkCreateQuestions = async (req, res) => {
     // 1. Validate each row and build the question objects to insert.
     //    rowNumber accounts for the header row so it matches what the admin
     //    sees when they open the CSV in a spreadsheet app.
-    const nextOrderByTest = {};
+    const testCache = {}; // testId -> Test doc, so repeated rows for the same test don't refetch
+    const nextOrderByTestSection = {}; // `${testId}:${sectionId}` -> next order
     const questions = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -252,12 +276,32 @@ export const bulkCreateQuestions = async (req, res) => {
 
       const options = [row.option1, row.option2, row.option3, row.option4];
 
-      if (!row.test || !row.questionText || options.some((opt) => !opt)) {
+      if (!row.test || !row.section || !row.questionText || options.some((opt) => !opt)) {
         return res.status(400).json({
           success: false,
-          message: `Row ${rowNumber}: test, questionText and all 4 options are required`,
+          message: `Row ${rowNumber}: test, section, questionText and all 4 options are required`,
         });
       }
+
+      if (testCache[row.test] === undefined) {
+        testCache[row.test] = await Test.findById(row.test);
+      }
+      const testDoc = testCache[row.test];
+      if (!testDoc) {
+        return res.status(400).json({
+          success: false,
+          message: `Row ${rowNumber}: test "${row.test}" not found`,
+        });
+      }
+
+      const sectionDoc = testDoc.sections.find((s) => s.name === row.section);
+      if (!sectionDoc) {
+        return res.status(400).json({
+          success: false,
+          message: `Row ${rowNumber}: section "${row.section}" does not belong to test "${row.test}"`,
+        });
+      }
+      const sectionId = sectionDoc._id;
 
       const correctAnswer = Number(row.correctAnswer) - 1; // CSV is 1-based
       if (!Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer > 3) {
@@ -271,15 +315,17 @@ export const bulkCreateQuestions = async (req, res) => {
       if (row.order !== undefined && row.order !== "") {
         order = Number(row.order);
       } else {
-        if (nextOrderByTest[row.test] === undefined) {
-          nextOrderByTest[row.test] = await Question.countDocuments({ test: row.test });
+        const key = `${row.test}:${sectionId}`;
+        if (nextOrderByTestSection[key] === undefined) {
+          nextOrderByTestSection[key] = await Question.countDocuments({ test: row.test, section: sectionId });
         }
-        order = nextOrderByTest[row.test];
-        nextOrderByTest[row.test] += 1;
+        order = nextOrderByTestSection[key];
+        nextOrderByTestSection[key] += 1;
       }
 
       questions.push({
         test: row.test,
+        section: sectionId,
         questionText: row.questionText,
         options: options.map((text) => ({ text })),
         correctAnswer,

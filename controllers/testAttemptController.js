@@ -30,7 +30,7 @@ export const finalizeAttempt = async (attempt, status) => {
   let wrongCount = 0;
 
   attempt.answers.forEach((ans) => {
-    if (!ans.question) return; // question may have been removed
+    if (!ans.question || !ans.question.isActive) return; // question removed or soft-deleted since being answered
     if (ans.isCorrect) {
       score += ans.question.marks || 0;
       correctCount += 1;
@@ -117,15 +117,39 @@ export const startTest = async (req, res) => {
     const startedAt = new Date();
     const expiresAt = new Date(startedAt.getTime() + test.duration * 60 * 1000);
 
-    attempt = await TestAttempt.create({
-      user: req.user.id,
-      test: testId,
-      startedAt,
-      expiresAt,
-      totalMarks: test.totalMarks,
-      currentQuestionIndex: 0,
-      status: "in-progress",
-    });
+    try {
+      attempt = await TestAttempt.create({
+        user: req.user.id,
+        test: testId,
+        startedAt,
+        expiresAt,
+        totalMarks: test.totalMarks,
+        currentQuestionIndex: 0,
+        status: "in-progress",
+      });
+    } catch (createError) {
+      // Lost a race to a concurrent /start request — the partial unique index
+      // on (user, test, status: "in-progress") rejected this insert because
+      // the other request's attempt now exists. Reuse it instead of erroring.
+      if (createError.code === 11000) {
+        attempt = await TestAttempt.findOne({
+          user: req.user.id,
+          test: testId,
+          status: "in-progress",
+        });
+        if (attempt) {
+          return res.status(200).json({
+            success: true,
+            resumed: true,
+            message: "Resuming your in-progress attempt",
+            data: attempt,
+          });
+        }
+      }
+      throw createError;
+    }
+
+    await Test.findByIdAndUpdate(testId, { $inc: { attemptsCount: 1 } });
 
     res.status(201).json({ success: true, resumed: false, data: attempt });
   } catch (error) {
@@ -222,7 +246,7 @@ export const saveAnswer = async (req, res) => {
       });
     }
 
-    const question = await Question.findById(questionId);
+    const question = await Question.findOne({ _id: questionId, isActive: true });
     if (!question || String(question.test) !== String(attempt.test)) {
       return res.status(404).json({ success: false, message: "Question not found for this test" });
     }
@@ -357,7 +381,11 @@ export const getResult = async (req, res) => {
         percentage,
         correctCount: attempt.correctCount,
         wrongCount: attempt.wrongCount,
-        unattempted: questions.length - attempt.answers.length,
+        // Derived from the breakdown (scoped to currently-active questions) rather
+        // than attempt.answers.length, which can include answers for questions
+        // that were soft-deleted after being answered and would otherwise make
+        // this go negative.
+        unattempted: breakdown.filter((b) => !b.attempted).length,
         startedAt: attempt.startedAt,
         submittedAt: attempt.submittedAt,
         breakdown,
@@ -378,8 +406,11 @@ export const getLeaderboard = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid testId" });
     }
 
-    const test = await Test.findById(testId).select("title totalMarks");
-    if (!test) {
+    const test = await Test.findById(testId).select("title totalMarks isActive isPublished");
+    if (!test || !test.isActive) {
+      return res.status(404).json({ success: false, message: "Test not found" });
+    }
+    if (req.user?.role !== "admin" && !test.isPublished) {
       return res.status(404).json({ success: false, message: "Test not found" });
     }
 

@@ -1,6 +1,9 @@
 // controllers/category.controller.js
 
+import fs from "fs";
+import path from "path";
 import Category from "../models/Category.js";
+import { toUploadUrl } from "../middleware/upload.js";
 
 // ✅ GET all categories
 export const getCategories = async (req, res) => {
@@ -52,12 +55,12 @@ export const getCategoryById = async (req, res) => {
 // ✅ CREATE category (Admin)
 export const createCategory = async (req, res) => {
   try {
-    const { name, description, image } = req.body;
+    const { name, description } = req.body;
 
     const category = await Category.create({
       name,
       description,
-      image,
+      image: req.file ? toUploadUrl(req.file) : "",
     });
 
     res.status(201).json({
@@ -77,9 +80,25 @@ export const createCategory = async (req, res) => {
 // ✅ UPDATE category (Admin)
 export const updateCategory = async (req, res) => {
   try {
+    const payload = { ...req.body };
+
+    if (req.file) {
+      const existing = await Category.findById(req.params.id);
+      if (!existing) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
+      }
+      payload.image = toUploadUrl(req.file);
+      if (existing.image) {
+        fs.unlink(path.join(process.cwd(), existing.image), () => {});
+      }
+    }
+
     const updated = await Category.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      payload,
       { new: true }
     );
 

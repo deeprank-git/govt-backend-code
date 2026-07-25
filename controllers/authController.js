@@ -5,7 +5,7 @@ import RefreshToken from '../models/RefreshToken.js';
 import generateToken from '../utils/generateToken.js';
 import crypto from 'crypto';
 import { sendPasswordResetEmail } from '../utils/emailService.js';
-import { UPLOAD_DIR } from '../middleware/upload.js';
+import { toUploadUrl } from '../middleware/upload.js';
 
 // Mongo duplicate-key error (e.g. email or username already taken) —
 // surfaced as a 400 with the offending field name instead of a generic 500.
@@ -275,10 +275,10 @@ export const updateMe = async (req, res) => {
         // New profile picture uploaded — swap it in and best-effort clean up the old file.
         if (req.file) {
             const previousPicture = user.profilePicture;
-            user.profilePicture = `/uploads/${req.file.filename}`;
+            user.profilePicture = toUploadUrl(req.file);
 
             if (previousPicture) {
-                const previousPath = path.join(UPLOAD_DIR, path.basename(previousPicture));
+                const previousPath = path.join(process.cwd(), previousPicture);
                 fs.unlink(previousPath, () => {});
             }
         }

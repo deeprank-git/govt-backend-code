@@ -3,7 +3,7 @@
 import fs from "fs";
 import path from "path";
 import TestSeries from "../models/TestSeries.js";
-import { UPLOAD_DIR } from "../middleware/upload.js";
+import { toUploadUrl } from "../middleware/upload.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -23,8 +23,6 @@ const validateImportantDates = (importantDates) => {
     }
   }
 };
-
-const FILE_FIELDS = ["image", "notificationPdf", "infoPdf"];
 
 // ✅ GET all (filter by category optional)
 // Students/instructors only see published + active series. Admin sees all.
@@ -102,6 +100,8 @@ export const createTestSeries = async (req, res) => {
     const { importantDates, ...rest } = req.body;
     const payload = { ...rest, createdBy: req.user.id };
 
+    if (req.uploadEntityId) payload._id = req.uploadEntityId;
+
     if (importantDates !== undefined) {
       try {
         payload.importantDates = JSON.parse(importantDates);
@@ -114,11 +114,11 @@ export const createTestSeries = async (req, res) => {
       }
     }
 
-    for (const field of FILE_FIELDS) {
-      const uploaded = req.files?.image?.[0]s?.[field]?.[0];
-      if (uploaded) payload[field] = `/uploads/${uploadeds.image[0].filename}`;
-    if (req.files?.notificationPdf?.[0])
-      payload.notificationPdf = `/uploads/${req.files.notificationPdf[0].filename}`;
+    if (req.files?.image?.[0]) {
+      payload.image = toUploadUrl(req.files.image[0]);
+    }
+    if (req.files?.notificationPdf?.[0]) {
+      payload.notificationPdf = toUploadUrl(req.files.notificationPdf[0]);
     }
 
     const series = await TestSeries.create(payload);
@@ -154,15 +154,15 @@ export const updateTestSeries = async (req, res) => {
         });
       }
       if (req.files.image?.[0]) {
-        payload.image = `/uploads/${req.files.image[0].filename}`;
+        payload.image = toUploadUrl(req.files.image[0]);
         if (existing.image) {
-          fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.image)), () => {});
+          fs.unlink(path.join(process.cwd(), existing.image), () => {});
         }
       }
       if (req.files.notificationPdf?.[0]) {
-        payload.notificationPdf = `/uploads/${req.files.notificationPdf[0].filename}`;
+        payload.notificationPdf = toUploadUrl(req.files.notificationPdf[0]);
         if (existing.notificationPdf) {
-          fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.notificationPdf)), () => {});
+          fs.unlink(path.join(process.cwd(), existing.notificationPdf), () => {});
         }
       }
     }

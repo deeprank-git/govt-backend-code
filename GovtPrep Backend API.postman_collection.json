@@ -11,11 +11,31 @@
       "value": "http://localhost:5000"
     },
     {
-      "key": "accessToken",
+      "key": "studentAccessToken",
       "value": ""
     },
     {
-      "key": "refreshToken",
+      "key": "studentRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "studentUserId",
+      "value": ""
+    },
+    {
+      "key": "adminAccessToken",
+      "value": ""
+    },
+    {
+      "key": "adminRefreshToken",
+      "value": ""
+    },
+    {
+      "key": "adminUserId",
+      "value": ""
+    },
+    {
+      "key": "targetUserId",
       "value": ""
     },
     {
@@ -31,15 +51,15 @@
       "value": ""
     },
     {
+      "key": "sectionId",
+      "value": ""
+    },
+    {
       "key": "questionId",
       "value": ""
     },
     {
       "key": "attemptId",
-      "value": ""
-    },
-    {
-      "key": "userId",
       "value": ""
     },
     {
@@ -68,7 +88,7 @@
     "bearer": [
       {
         "key": "token",
-        "value": "{{accessToken}}",
+        "value": "{{studentAccessToken}}",
         "type": "string"
       }
     ]
@@ -78,7 +98,7 @@
       "name": "Auth",
       "item": [
         {
-          "name": "Register",
+          "name": "Register (Student)",
           "request": {
             "method": "POST",
             "header": [
@@ -114,7 +134,43 @@
           }
         },
         {
-          "name": "Login",
+          "name": "Register (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Admin\",\n  \"email\": \"testadmin@example.com\",\n  \"mobile\": \"8888888888\",\n  \"password\": \"password123\",\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login (Student)",
           "request": {
             "method": "POST",
             "header": [
@@ -155,9 +211,64 @@
                 "type": "text/javascript",
                 "exec": [
                   "const data = pm.response.json();",
-                  "if (data.token) pm.collectionVariables.set(\"accessToken\", data.token);",
-                  "if (data.refreshToken) pm.collectionVariables.set(\"refreshToken\", data.refreshToken);",
-                  "if (data.user && data.user.id) pm.collectionVariables.set(\"userId\", data.user.id);"
+                  "if (data.user && data.user.role !== \"student\") console.warn(`Login (Student) got back role \"${data.user.role}\" — wrong credentials?`);",
+                  "if (data.token) pm.collectionVariables.set(\"studentAccessToken\", data.token);",
+                  "if (data.refreshToken) pm.collectionVariables.set(\"studentRefreshToken\", data.refreshToken);",
+                  "if (data.user && data.user.id) {",
+                  "  pm.collectionVariables.set(\"studentUserId\", data.user.id);",
+                  "  pm.collectionVariables.set(\"targetUserId\", data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testadmin@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.user && data.user.role !== \"admin\") console.warn(`Login (Admin) got back role \"${data.user.role}\" — wrong credentials?`);",
+                  "if (data.token) pm.collectionVariables.set(\"adminAccessToken\", data.token);",
+                  "if (data.refreshToken) pm.collectionVariables.set(\"adminRefreshToken\", data.refreshToken);",
+                  "if (data.user && data.user.id) pm.collectionVariables.set(\"adminUserId\", data.user.id);"
                 ]
               }
             }
@@ -184,13 +295,13 @@
                 "refresh"
               ]
             },
-            "description": "",
+            "description": "No auth header needed — swap {{studentRefreshToken}} for {{adminRefreshToken}} to refresh the admin session instead.",
             "auth": {
               "type": "noauth"
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "raw": "{\n  \"refreshToken\": \"{{studentRefreshToken}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -205,8 +316,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "const data = pm.response.json();",
-                  "if (data.token) pm.collectionVariables.set(\"accessToken\", data.token);",
-                  "if (data.refreshToken) pm.collectionVariables.set(\"refreshToken\", data.refreshToken);"
+                  "if (data.token) pm.collectionVariables.set(\"studentAccessToken\", data.token);",
+                  "if (data.refreshToken) pm.collectionVariables.set(\"studentRefreshToken\", data.refreshToken);"
                 ]
               }
             }
@@ -233,13 +344,13 @@
                 "logout"
               ]
             },
-            "description": "",
+            "description": "No auth header needed — swap {{studentRefreshToken}} for {{adminRefreshToken}} to log out the admin session instead.",
             "auth": {
               "type": "noauth"
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "raw": "{\n  \"refreshToken\": \"{{studentRefreshToken}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -324,6 +435,16 @@
     },
     {
       "name": "Users",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Get My Profile",
@@ -360,7 +481,7 @@
                 "me"
               ]
             },
-            "description": "",
+            "description": "profilePicture lands flat under uploads/ (no subfolder). Replacing it deletes the old file from disk.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -442,6 +563,16 @@
     },
     {
       "name": "Users (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "List Users",
@@ -480,7 +611,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/admin/users/{{userId}}",
+              "raw": "{{baseUrl}}/api/admin/users/{{targetUserId}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -488,7 +619,7 @@
                 "api",
                 "admin",
                 "users",
-                "{{userId}}"
+                "{{targetUserId}}"
               ]
             },
             "description": ""
@@ -505,7 +636,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/admin/users/{{userId}}",
+              "raw": "{{baseUrl}}/api/admin/users/{{targetUserId}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -513,7 +644,7 @@
                 "api",
                 "admin",
                 "users",
-                "{{userId}}"
+                "{{targetUserId}}"
               ]
             },
             "description": "",
@@ -532,6 +663,16 @@
     },
     {
       "name": "Categories",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "List Categories",
@@ -574,17 +715,22 @@
     },
     {
       "name": "Categories (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Create Category",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/admin/categories",
               "host": [
@@ -596,15 +742,29 @@
                 "categories"
               ]
             },
-            "description": "",
+            "description": "multipart/form-data — categoryImage is a real file upload, stored under uploads/category_image/.",
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"SSC\",\n  \"description\": \"Staff Selection Commission exams\",\n  \"image\": \"\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "SSC",
+                  "type": "text",
+                  "disabled": false
+                },
+                {
+                  "key": "description",
+                  "value": "Staff Selection Commission exams",
+                  "type": "text",
+                  "disabled": false
+                },
+                {
+                  "key": "categoryImage",
+                  "type": "file",
+                  "src": [],
+                  "disabled": false
                 }
-              }
+              ]
             }
           },
           "event": [
@@ -624,12 +784,7 @@
           "name": "Update Category",
           "request": {
             "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/admin/categories/{{categoryId}}",
               "host": [
@@ -642,15 +797,23 @@
                 "{{categoryId}}"
               ]
             },
-            "description": "",
+            "description": "multipart/form-data. Omit categoryImage to keep the existing one. All fields optional.",
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"description\": \"Updated description\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "description",
+                  "value": "Updated description",
+                  "type": "text",
+                  "disabled": false
+                },
+                {
+                  "key": "categoryImage",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
                 }
-              }
+              ]
             }
           }
         },
@@ -678,6 +841,16 @@
     },
     {
       "name": "Test Series",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "List Test Series",
@@ -727,6 +900,16 @@
     },
     {
       "name": "Test Series (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Create Test Series",
@@ -744,7 +927,7 @@
                 "test-series"
               ]
             },
-            "description": "multipart/form-data — image/notificationPdf/infoPdf are each independent real file uploads. importantDates must be a JSON-stringified string; every value is an exact { from, to } date (a single day sets from === to) — free-text dates like \"July 2025\" are rejected with a 400. negativeMarking/negativeMarksPerQuestion/marksPerQuestion are inherited by every Test created under this series.",
+            "description": "multipart/form-data — image/notificationPdf are each independent real file uploads, stored under uploads/testseries_image/ and uploads/notificationPDF/ respectively; the returned image/notificationPdf URLs always include that subfolder. importantDates must be a JSON-stringified string; every value is an exact { from, to } date (a single day sets from === to) — free-text dates like \"July 2025\" are rejected with a 400. negativeMarking/negativeMarksPerQuestion/marksPerQuestion are inherited by every Test created under this series.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -767,6 +950,18 @@
                   "disabled": false
                 },
                 {
+                  "key": "officialWebsite",
+                  "value": "https://ssc.nic.in",
+                  "type": "text",
+                  "disabled": false
+                },
+                {
+                  "key": "applyLink",
+                  "value": "https://ssc.nic.in/apply",
+                  "type": "text",
+                  "disabled": false
+                },
+                {
                   "key": "image",
                   "type": "file",
                   "src": [],
@@ -774,12 +969,6 @@
                 },
                 {
                   "key": "notificationPdf",
-                  "type": "file",
-                  "src": [],
-                  "disabled": false
-                },
-                {
-                  "key": "infoPdf",
                   "type": "file",
                   "src": [],
                   "disabled": false
@@ -859,7 +1048,7 @@
                 "{{testSeriesId}}"
               ]
             },
-            "description": "multipart/form-data. Omit any of image/notificationPdf/infoPdf to keep the existing one — each is independent. All fields optional.",
+            "description": "multipart/form-data. Omit image/notificationPdf to keep the existing one — each is independent. All fields optional. Replacing either deletes the old file from disk and returns the new one's URL with its uploads/testseries_image/ or uploads/notificationPDF/ subfolder included.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -870,6 +1059,18 @@
                   "disabled": false
                 },
                 {
+                  "key": "officialWebsite",
+                  "value": "https://ssc.nic.in",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "applyLink",
+                  "value": "https://ssc.nic.in/apply",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
                   "key": "image",
                   "type": "file",
                   "src": [],
@@ -877,12 +1078,6 @@
                 },
                 {
                   "key": "notificationPdf",
-                  "type": "file",
-                  "src": [],
-                  "disabled": true
-                },
-                {
-                  "key": "infoPdf",
                   "type": "file",
                   "src": [],
                   "disabled": true
@@ -933,6 +1128,16 @@
     },
     {
       "name": "Tests",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "List Tests",
@@ -940,7 +1145,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/tests?category={{categoryId}}&testSeries={{testSeriesId}}",
+              "raw": "{{baseUrl}}/api/tests?category={{categoryId}}&testSeries={{testSeriesId}}&paperType=previous_year&year=2024",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -952,16 +1157,29 @@
                 {
                   "key": "category",
                   "value": "{{categoryId}}",
-                  "disabled": true
+                  "disabled": true,
+                  "description": "Resolved via each Test's testSeries.category — testSeries takes precedence if both are given"
                 },
                 {
                   "key": "testSeries",
                   "value": "{{testSeriesId}}",
                   "disabled": true
+                },
+                {
+                  "key": "paperType",
+                  "value": "previous_year",
+                  "disabled": true,
+                  "description": "\"mock\" or \"previous_year\""
+                },
+                {
+                  "key": "year",
+                  "value": "2024",
+                  "disabled": true,
+                  "description": "Filters by examDate falling within this calendar year"
                 }
               ]
             },
-            "description": ""
+            "description": "Returns title, description, duration, totalQuestions, totalMarks, isPublished, isPaid, testSeries, paperType, examDate, attemptsCount for each test."
           }
         },
         {
@@ -987,6 +1205,16 @@
     },
     {
       "name": "Tests (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Create Test",
@@ -1009,10 +1237,10 @@
                 "tests"
               ]
             },
-            "description": "testSeries is now required — every test must belong to a series. sections carries the per-subject exam-pattern breakdown and must have at least one entry. duration is always computed server-side as the sum of every section's duration (any duration sent here is ignored) — do not send it. totalQuestions/totalMarks are left alone here too; they're auto-calculated from actual Question documents as they're added (see Questions (Admin) > Create Question).",
+            "description": "testSeries is now required — every test must belong to a series (category is derived from testSeries.category, not set directly on Test). sections carries the per-subject exam-pattern breakdown and must have at least one entry. duration is always computed server-side as the sum of every section's duration (any duration sent here is ignored) — do not send it. totalQuestions/totalMarks are left alone here too; they're auto-calculated from actual Question documents as they're added (see Questions (Admin) > Create Question). paperType defaults to \"mock\" — omit examDate unless paperType is \"previous_year\" (see the sibling \"Create Previous Year Paper\" example). attemptsCount is server-managed (incremented on test start) and cannot be set here.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"SSC CGL Tier 1\",\n  \"testSeries\": \"{{testSeriesId}}\",\n  \"category\": \"{{categoryId}}\",\n  \"isPublished\": true,\n  \"isPaid\": false,\n  \"sections\": [\n    {\n      \"name\": \"General Intelligence & Reasoning\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"General Awareness\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"Quantitative Aptitude\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"English Comprehension\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    }\n  ]\n}",
+              "raw": "{\n  \"title\": \"SSC CGL Tier 1\",\n  \"testSeries\": \"{{testSeriesId}}\",\n  \"isPublished\": true,\n  \"isPaid\": false,\n  \"sections\": [\n    {\n      \"name\": \"General Intelligence & Reasoning\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"General Awareness\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"Quantitative Aptitude\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"English Comprehension\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1027,11 +1255,45 @@
                 "type": "text/javascript",
                 "exec": [
                   "const data = pm.response.json();",
-                  "if (data.data && data.data._id) pm.collectionVariables.set(\"testId\", data.data._id);"
+                  "if (data.data && data.data._id) pm.collectionVariables.set(\"testId\", data.data._id);",
+                  "if (data.data && data.data.sections && data.data.sections[0]) pm.collectionVariables.set(\"sectionId\", data.data.sections[0]._id);"
                 ]
               }
             }
           ]
+        },
+        {
+          "name": "Create Previous Year Paper",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/tests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "tests"
+              ]
+            },
+            "description": "Same endpoint as Create Test — paperType: \"previous_year\" plus examDate is what distinguishes a previous-year paper from a regular mock test. Everything else (sections, duration, totalQuestions/totalMarks) works exactly the same.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"SSC CGL 2024 Tier 1 - Shift 1\",\n  \"testSeries\": \"{{testSeriesId}}\",\n  \"paperType\": \"previous_year\",\n  \"examDate\": \"2024-09-09\",\n  \"isPublished\": true,\n  \"isPaid\": false,\n  \"sections\": [\n    {\n      \"name\": \"General Intelligence & Reasoning\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"General Awareness\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"Quantitative Aptitude\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"English Comprehension\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         },
         {
           "name": "Update Test",
@@ -1091,6 +1353,16 @@
     },
     {
       "name": "Questions",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "List Questions For a Test",
@@ -1098,7 +1370,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/questions?test={{testId}}",
+              "raw": "{{baseUrl}}/api/questions?test={{testId}}&section={{sectionId}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1111,6 +1383,11 @@
                   "key": "test",
                   "value": "{{testId}}",
                   "disabled": false
+                },
+                {
+                  "key": "section",
+                  "value": "{{sectionId}}",
+                  "disabled": true
                 }
               ]
             },
@@ -1121,6 +1398,16 @@
     },
     {
       "name": "Questions (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Download Bulk CSV Template",
@@ -1160,7 +1447,7 @@
                 "bulk"
               ]
             },
-            "description": "CSV columns: test, questionText, option1, option2, option3, option4, correctAnswer(1-based), marks, explanation, order",
+            "description": "CSV columns: test, section, questionText, option1, option2, option3, option4, correctAnswer(1-based), marks, explanation, order. section is matched by name against the target test's sections[].name (case-sensitive exact match).",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -1195,10 +1482,10 @@
                 "questions"
               ]
             },
-            "description": "",
+            "description": "section must be one of the target test's sections[]._id (see Create Test's response, or {{sectionId}} which Create Test captures automatically from its first section).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"test\": \"{{testId}}\",\n  \"questionText\": \"Find the odd one out: 2, 4, 6, 9, 8\",\n  \"options\": [\n    {\n      \"text\": \"2\"\n    },\n    {\n      \"text\": \"4\"\n    },\n    {\n      \"text\": \"9\"\n    },\n    {\n      \"text\": \"8\"\n    }\n  ],\n  \"correctAnswer\": 2,\n  \"marks\": 1,\n  \"explanation\": \"9 is the only odd number in the list.\"\n}",
+              "raw": "{\n  \"test\": \"{{testId}}\",\n  \"section\": \"{{sectionId}}\",\n  \"questionText\": \"Find the odd one out: 2, 4, 6, 9, 8\",\n  \"options\": [\n    {\n      \"text\": \"2\"\n    },\n    {\n      \"text\": \"4\"\n    },\n    {\n      \"text\": \"9\"\n    },\n    {\n      \"text\": \"8\"\n    }\n  ],\n  \"correctAnswer\": 2,\n  \"marks\": 1,\n  \"explanation\": \"9 is the only odd number in the list.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1225,7 +1512,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/admin/questions?test={{testId}}",
+              "raw": "{{baseUrl}}/api/admin/questions?test={{testId}}&section={{sectionId}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -1238,6 +1525,11 @@
                 {
                   "key": "test",
                   "value": "{{testId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "section",
+                  "value": "{{sectionId}}",
                   "disabled": true
                 }
               ]
@@ -1303,6 +1595,16 @@
     },
     {
       "name": "Test Attempts",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Start Attempt",
@@ -1325,7 +1627,7 @@
                 "start"
               ]
             },
-            "description": "",
+            "description": "Resuming an existing in-progress attempt is race-safe — a DB-level partial unique index on (user, test) while status is \"in-progress\" means two near-simultaneous calls can't create duplicate attempts; the losing request just resumes the winner's attempt (resumed: true) instead of erroring.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"testId\": \"{{testId}}\"\n}",
@@ -1410,7 +1712,7 @@
                 "save-answer"
               ]
             },
-            "description": "",
+            "description": "404s if questionId doesn't belong to this attempt's test or has since been soft-deleted by an admin (isActive: false) — answers are never accepted against an inactive question.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"attemptId\": \"{{attemptId}}\",\n  \"questionId\": \"{{questionId}}\",\n  \"selectedOption\": 2\n}",
@@ -1472,13 +1774,23 @@
                 "result"
               ]
             },
-            "description": ""
+            "description": "score/breakdown/unattempted are all scoped to currently-active questions — a question soft-deleted after being answered no longer contributes marks and is excluded from the unattempted count too, so the numbers stay internally consistent."
           }
         }
       ]
     },
     {
       "name": "Leaderboard",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Get Leaderboard For a Test",
@@ -1503,13 +1815,23 @@
                 }
               ]
             },
-            "description": ""
+            "description": "404s for an inactive or (non-admin-viewed) unpublished test, matching Get Test By Id's convention. Ranks the best attempt per user (highest score, fastest submit as tiebreak) among completed/auto-submitted attempts."
           }
         }
       ]
     },
     {
       "name": "Current Affairs",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "List Current Affairs",
@@ -1574,6 +1896,16 @@
     },
     {
       "name": "Current Affairs (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Create Current Affairs",
@@ -1678,6 +2010,16 @@
     },
     {
       "name": "Media (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Upload Media",
@@ -1696,7 +2038,7 @@
                 "upload"
               ]
             },
-            "description": "",
+            "description": "Generic upload — file lands flat under uploads/ (no subfolder). Returned url always matches the file's real on-disk location.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -1789,6 +2131,9 @@
     },
     {
       "name": "Pages",
+      "auth": {
+        "type": "noauth"
+      },
       "item": [
         {
           "name": "Get Published Page By Slug",
@@ -1813,6 +2158,16 @@
     },
     {
       "name": "Pages (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "List Pages",
@@ -1943,6 +2298,16 @@
     },
     {
       "name": "Reports (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "List Reports",
@@ -2008,6 +2373,9 @@
     },
     {
       "name": "Settings",
+      "auth": {
+        "type": "noauth"
+      },
       "item": [
         {
           "name": "Get Public Settings",
@@ -2034,6 +2402,16 @@
     },
     {
       "name": "Settings (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Update Settings",
@@ -2072,6 +2450,16 @@
     },
     {
       "name": "Notifications",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "My Notifications",
@@ -2123,6 +2511,16 @@
     },
     {
       "name": "Notifications (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Send Notification",
@@ -2148,7 +2546,7 @@
             "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"New mock test available\",\n  \"message\": \"SSC CGL Tier 1 mock test is now live.\",\n  \"type\": \"info\"\n}",
+              "raw": "{\n  \"userId\": \"{{targetUserId}}\",\n  \"title\": \"New mock test available\",\n  \"message\": \"SSC CGL Tier 1 mock test is now live.\",\n  \"type\": \"info\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2199,6 +2597,16 @@
     },
     {
       "name": "Search",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{studentAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Global Search",
@@ -2229,6 +2637,16 @@
     },
     {
       "name": "Analytics (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{adminAccessToken}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
           "name": "Dashboard Overview",

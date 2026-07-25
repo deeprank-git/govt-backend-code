@@ -37,6 +37,14 @@ const questionSchema = new mongoose.Schema(
       required: true,
     },
 
+    // References a Test.sections[]._id subdocument, not a top-level
+    // collection — validated in the controller against the Test's own
+    // sections array rather than via a Mongoose `ref`.
+    section: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+    },
+
     marks: {
       type: Number,
       default: 1,

@@ -25,16 +25,32 @@ export const getTests = async (req, res) => {
       filter.isPublished = true;
     }
 
-    if (req.query.category) {
-      filter.category = req.query.category;
+    if (req.query.testSeries) {
+      // more specific than category — takes precedence if both are given
+      filter.testSeries = req.query.testSeries;
+    } else if (req.query.category) {
+      const seriesIds = await TestSeries.find({ category: req.query.category }).distinct("_id");
+      filter.testSeries = { $in: seriesIds };
     }
 
-    if (req.query.testSeries) {
-      filter.testSeries = req.query.testSeries;
+    if (req.query.paperType) {
+      filter.paperType = req.query.paperType;
+    }
+
+    if (req.query.year) {
+      const year = Number(req.query.year);
+      if (!Number.isNaN(year)) {
+        filter.examDate = {
+          $gte: new Date(`${year}-01-01T00:00:00.000Z`),
+          $lte: new Date(`${year}-12-31T23:59:59.999Z`),
+        };
+      }
     }
 
     const tests = await Test.find(filter)
-      .select("title description duration totalQuestions totalMarks isPublished isPaid category testSeries")
+      .select(
+        "title description duration totalQuestions totalMarks isPublished isPaid testSeries paperType examDate attemptsCount"
+      )
       .sort({ createdAt: -1 })
       .lean();
 
