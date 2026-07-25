@@ -1,0 +1,248 @@
+{
+  "info": {
+    "name": "GovtPrep — Current Affairs",
+    "_postman_id": "govtprep-current-affairs-collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Scoped-down collection covering only the Current Affairs module (student + admin). Admin Create/Update use multipart/form-data since the image field now goes through a real file upload (currentAffairsImage), matching TestSeries.image / User.profilePicture. Run 'Login (Student)' and 'Login (Admin)' first to populate the auth tokens, then 'Create Current Affairs' to populate currentAffairsId for the rest."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "studentAccessToken", "value": "" },
+    { "key": "adminAccessToken", "value": "" },
+    { "key": "currentAffairsId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth (get tokens)",
+      "item": [
+        {
+          "name": "Login (Student)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.token) pm.collectionVariables.set(\"studentAccessToken\", data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "auth": { "type": "noauth" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testadmin@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.token) pm.collectionVariables.set(\"adminAccessToken\", data.token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Current Affairs (Student)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{studentAccessToken}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "List Current Affairs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/current-affairs?date=&category=Economy&q=&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "current-affairs"],
+              "query": [
+                { "key": "date", "value": "", "disabled": true },
+                { "key": "category", "value": "Economy", "disabled": true },
+                { "key": "q", "value": "", "disabled": true },
+                { "key": "limit", "value": "50" }
+              ]
+            },
+            "description": "Published + active articles only. Filters: date (exact day, YYYY-MM-DD), category (exact match), q (free-text search across title/content/tags), limit."
+          }
+        },
+        {
+          "name": "Get Current Affairs By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/current-affairs/{{currentAffairsId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "current-affairs", "{{currentAffairsId}}"]
+            },
+            "description": "Full article incl. content. Increments the view counter server-side."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Current Affairs (Admin)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{adminAccessToken}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "Create Current Affairs",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/current-affairs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "current-affairs"]
+            },
+            "description": "Multipart — 'tags' rides as a JSON-stringified array, 'isPublished' as the literal string \"true\"/\"false\" (backend coerces both back). 'currentAffairsImage' is optional; pick any local image file in Postman to test the upload path — leave it empty to create without an image.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "type": "text",
+                  "value": "India Approves First Offshore Airport in Maharashtra's Palghar District"
+                },
+                {
+                  "key": "content",
+                  "type": "text",
+                  "value": "Maharashtra Chief Minister Devendra Fadnavis has given in-principle approval for India's first offshore airport, to be built off the coast of Palghar district near Kore Beach, roughly 4.75 km from the Uttan-Virar Sea Link. The project, proposed by the Maharashtra Airport Development Company (MADC), will be built on reclaimed land in the Arabian Sea and is planned with two runways designed to handle around 90 million passengers annually. It will become the third major airport serving the Mumbai Metropolitan Region, alongside Chhatrapati Shivaji Maharaj International Airport and the upcoming Navi Mumbai International Airport. The CM has directed officials to prepare a Detailed Project Report (DPR). Planned connectivity includes the Dedicated Freight Corridor (DFC), the Mumbai-Ahmedabad bullet train corridor, the Uttan-Virar Sea Link, the Mumbai-Vadodara Expressway, and the Mumbai-Ahmedabad National Highway. The project aims to meet growing aviation demand while working around land constraints in one of India's most densely populated regions. Construction is expected to begin in 2026, with operations projected for the early 2030s.\n\nExam angle: remember 'first offshore airport in India', the developer (MADC), the district (Palghar), and the passenger-capacity figure (90 million/year) — these specifics are the most likely angle for an objective-type question.",
+                  "description": "Built from real, sourced reporting — see sources in the chat reply, not fabricated."
+                },
+                {
+                  "key": "summary",
+                  "type": "text",
+                  "value": "Maharashtra CM Devendra Fadnavis approved India's first offshore airport, to be built on reclaimed land near Kore Beach, Palghar — designed for 90 million passengers a year."
+                },
+                {
+                  "key": "date",
+                  "type": "text",
+                  "value": "2026-06-30"
+                },
+                {
+                  "key": "category",
+                  "type": "text",
+                  "value": "Economy"
+                },
+                {
+                  "key": "tags",
+                  "type": "text",
+                  "value": "[\"Maharashtra\",\"Aviation\",\"Infrastructure\",\"Palghar\",\"MADC\",\"Offshore Airport\"]"
+                },
+                {
+                  "key": "isPublished",
+                  "type": "text",
+                  "value": "true"
+                },
+                {
+                  "key": "currentAffairsImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.data && data.data._id) pm.collectionVariables.set(\"currentAffairsId\", data.data._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Current Affairs",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/current-affairs/{{currentAffairsId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "current-affairs", "{{currentAffairsId}}"]
+            },
+            "description": "Send only the fields you want to change. Omit 'currentAffairsImage' entirely (don't just leave it empty) to keep the existing image — the backend only replaces it when a file is actually attached.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "type": "text",
+                  "value": "India Approves First Offshore Airport in Maharashtra's Palghar District (Updated)"
+                },
+                {
+                  "key": "isPublished",
+                  "type": "text",
+                  "value": "true"
+                },
+                {
+                  "key": "currentAffairsImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Current Affairs (soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/current-affairs/{{currentAffairsId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "current-affairs", "{{currentAffairsId}}"]
+            },
+            "description": "Sets isActive=false, isPublished=false. Article stops appearing for students but the row still exists."
+          }
+        }
+      ]
+    }
+  ]
+}

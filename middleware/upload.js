@@ -27,6 +27,7 @@ const SUBFOLDER_BY_FIELDNAME = {
   image: "testseries_image",
   notificationPdf: "notificationPDF",
   categoryImage: "category_image",
+  currentAffairsImage: "current_affairs_image",
 };
 
 const storage = multer.diskStorage({

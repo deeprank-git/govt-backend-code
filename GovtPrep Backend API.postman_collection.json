@@ -1911,12 +1911,7 @@
           "name": "Create Current Affairs",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/admin/current-affairs",
               "host": [
@@ -1928,15 +1923,51 @@
                 "current-affairs"
               ]
             },
-            "description": "",
+            "description": "Multipart now that the image field is a real file upload (currentAffairsImage) — tags rides as a JSON-stringified array, isPublished as a string, both coerced server-side.",
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Union Budget 2026 Highlights\",\n  \"content\": \"Full article content...\",\n  \"summary\": \"Key highlights of the Union Budget 2026.\",\n  \"category\": \"Economy\",\n  \"tags\": [\n    \"budget\",\n    \"economy\"\n  ],\n  \"date\": \"2026-07-24\",\n  \"isPublished\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "type": "text",
+                  "value": "India Approves First Offshore Airport in Maharashtra's Palghar District"
+                },
+                {
+                  "key": "content",
+                  "type": "text",
+                  "value": "Maharashtra Chief Minister Devendra Fadnavis has given in-principle approval for India's first offshore airport, to be built off the coast of Palghar district near Kore Beach, roughly 4.75 km from the Uttan-Virar Sea Link. Proposed by the Maharashtra Airport Development Company (MADC), it will be built on reclaimed land in the Arabian Sea with two runways designed to handle around 90 million passengers annually, becoming the third major airport serving the Mumbai Metropolitan Region. Construction is expected to begin in 2026, with operations projected for the early 2030s."
+                },
+                {
+                  "key": "summary",
+                  "type": "text",
+                  "value": "Maharashtra CM Devendra Fadnavis approved India's first offshore airport, to be built near Kore Beach, Palghar — designed for 90 million passengers a year."
+                },
+                {
+                  "key": "date",
+                  "type": "text",
+                  "value": "2026-06-30"
+                },
+                {
+                  "key": "category",
+                  "type": "text",
+                  "value": "Economy"
+                },
+                {
+                  "key": "tags",
+                  "type": "text",
+                  "value": "[\"Maharashtra\",\"Aviation\",\"Infrastructure\",\"Palghar\",\"MADC\",\"Offshore Airport\"]"
+                },
+                {
+                  "key": "isPublished",
+                  "type": "text",
+                  "value": "true"
+                },
+                {
+                  "key": "currentAffairsImage",
+                  "type": "file",
+                  "src": []
                 }
-              }
+              ]
             }
           },
           "event": [
@@ -1956,12 +1987,7 @@
           "name": "Update Current Affairs",
           "request": {
             "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/admin/current-affairs/{{currentAffairsId}}",
               "host": [
@@ -1974,15 +2000,21 @@
                 "{{currentAffairsId}}"
               ]
             },
-            "description": "",
+            "description": "Multipart — omit currentAffairsImage entirely to keep the existing image.",
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"isPublished\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "isPublished",
+                  "type": "text",
+                  "value": "true"
+                },
+                {
+                  "key": "currentAffairsImage",
+                  "type": "file",
+                  "src": []
                 }
-              }
+              ]
             }
           }
         },

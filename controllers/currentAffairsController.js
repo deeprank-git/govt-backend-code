@@ -1,6 +1,9 @@
 // controllers/currentAffairsController.js
 
+import fs from "fs";
+import path from "path";
 import CurrentAffairs from "../models/CurrentAffairs.js";
+import { toUploadUrl } from "../middleware/upload.js";
 
 // ✅ GET /api/current-affairs?date=&category=&q=
 // Students see only published + active entries. Admin sees everything
@@ -78,10 +81,24 @@ export const getCurrentAffairsById = async (req, res) => {
   }
 };
 
+// Multipart bodies (needed now that image uploads ride along as a file)
+// serialize everything else to strings, so array/boolean fields need explicit
+// coercion back — same pattern as testSeriesController's importantDates.
+const parseBody = (body) => {
+  const { tags, isPublished, ...rest } = body;
+  const payload = { ...rest };
+  if (tags !== undefined) payload.tags = JSON.parse(tags);
+  if (isPublished !== undefined) payload.isPublished = isPublished === "true";
+  return payload;
+};
+
 // ✅ CREATE (Admin)
 export const createCurrentAffairs = async (req, res) => {
   try {
-    const item = await CurrentAffairs.create({ ...req.body, createdBy: req.user.id });
+    const payload = { ...parseBody(req.body), createdBy: req.user.id };
+    if (req.file) payload.image = toUploadUrl(req.file);
+
+    const item = await CurrentAffairs.create(payload);
     res.status(201).json({ success: true, message: "Article created", data: item });
   } catch (error) {
     res.status(500).json({
@@ -95,7 +112,20 @@ export const createCurrentAffairs = async (req, res) => {
 // ✅ UPDATE (Admin)
 export const updateCurrentAffairs = async (req, res) => {
   try {
-    const updated = await CurrentAffairs.findByIdAndUpdate(req.params.id, req.body, {
+    const payload = parseBody(req.body);
+
+    if (req.file) {
+      const existing = await CurrentAffairs.findById(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ success: false, message: "Article not found" });
+      }
+      payload.image = toUploadUrl(req.file);
+      if (existing.image) {
+        fs.unlink(path.join(process.cwd(), existing.image), () => {});
+      }
+    }
+
+    const updated = await CurrentAffairs.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true,
     });

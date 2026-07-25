@@ -3,6 +3,7 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 import authorize from "../middleware/authorize.js";
+import upload from "../middleware/upload.js";
 import {
   createCurrentAffairs,
   updateCurrentAffairs,
@@ -13,8 +14,10 @@ const router = express.Router();
 
 router.use(authMiddleware, authorize("admin"));
 
-router.post("/", createCurrentAffairs);
-router.patch("/:id", updateCurrentAffairs);
+const uploadImage = upload.single("currentAffairsImage");
+
+router.post("/", uploadImage, createCurrentAffairs);
+router.patch("/:id", uploadImage, updateCurrentAffairs);
 router.delete("/:id", deleteCurrentAffairs);
 
 export default router;
