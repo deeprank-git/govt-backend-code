@@ -744,7 +744,7 @@
                 "test-series"
               ]
             },
-            "description": "multipart/form-data — image is a real file upload. importantDates must be sent as a JSON-stringified string. negativeMarking/negativeMarksPerQuestion/marksPerQuestion are inherited by every Test created under this series.",
+            "description": "multipart/form-data — image/notificationPdf/infoPdf are each independent real file uploads. importantDates must be a JSON-stringified string; every value is an exact { from, to } date (a single day sets from === to) — free-text dates like \"July 2025\" are rejected with a 400. negativeMarking/negativeMarksPerQuestion/marksPerQuestion are inherited by every Test created under this series.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -773,8 +773,20 @@
                   "disabled": false
                 },
                 {
+                  "key": "notificationPdf",
+                  "type": "file",
+                  "src": [],
+                  "disabled": false
+                },
+                {
+                  "key": "infoPdf",
+                  "type": "file",
+                  "src": [],
+                  "disabled": false
+                },
+                {
                   "key": "importantDates",
-                  "value": "{\"notification_date\":\"09 May 2025\",\"application_start\":\"09 May 2025\",\"last_date_to_apply\":\"04 June 2025\",\"admit_card\":\"July 2025\",\"tier_1_exam\":\"Aug - Sep 2025\",\"tier_1_result\":\"Dec 2025\"}",
+                  "value": "{\"notification_date\":{\"from\":\"2025-05-09\",\"to\":\"2025-05-09\"},\"application_start\":{\"from\":\"2025-05-09\",\"to\":\"2025-05-09\"},\"last_date_to_apply\":{\"from\":\"2025-06-04\",\"to\":\"2025-06-04\"},\"admit_card\":{\"from\":\"2025-07-15\",\"to\":\"2025-07-31\"},\"tier_1_exam\":{\"from\":\"2025-08-01\",\"to\":\"2025-09-07\"},\"tier_1_result\":{\"from\":\"2025-12-01\",\"to\":\"2025-12-31\"}}",
                   "type": "text",
                   "disabled": false
                 },
@@ -847,7 +859,7 @@
                 "{{testSeriesId}}"
               ]
             },
-            "description": "multipart/form-data. Omit `image` to keep the existing one. All fields optional.",
+            "description": "multipart/form-data. Omit any of image/notificationPdf/infoPdf to keep the existing one — each is independent. All fields optional.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -864,8 +876,20 @@
                   "disabled": true
                 },
                 {
+                  "key": "notificationPdf",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
+                },
+                {
+                  "key": "infoPdf",
+                  "type": "file",
+                  "src": [],
+                  "disabled": true
+                },
+                {
                   "key": "importantDates",
-                  "value": "{\"admit_card\":\"August 2025\"}",
+                  "value": "{\"admit_card\":{\"from\":\"2025-07-15\",\"to\":\"2025-08-05\"}}",
                   "type": "text",
                   "disabled": false
                 },
@@ -985,10 +1009,10 @@
                 "tests"
               ]
             },
-            "description": "testSeries is now required — every test must belong to a series. sections carries the per-subject exam-pattern breakdown.",
+            "description": "testSeries is now required — every test must belong to a series. sections carries the per-subject exam-pattern breakdown and must have at least one entry. duration is always computed server-side as the sum of every section's duration (any duration sent here is ignored) — do not send it. totalQuestions/totalMarks are left alone here too; they're auto-calculated from actual Question documents as they're added (see Questions (Admin) > Create Question).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"SSC CGL Tier 1\",\n  \"testSeries\": \"{{testSeriesId}}\",\n  \"category\": \"{{categoryId}}\",\n  \"duration\": 60,\n  \"totalQuestions\": 100,\n  \"totalMarks\": 200,\n  \"isPublished\": true,\n  \"isPaid\": false,\n  \"sections\": [\n    {\n      \"name\": \"General Intelligence & Reasoning\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 60\n    },\n    {\n      \"name\": \"General Awareness\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 60\n    },\n    {\n      \"name\": \"Quantitative Aptitude\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 60\n    },\n    {\n      \"name\": \"English Comprehension\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 60\n    }\n  ]\n}",
+              "raw": "{\n  \"title\": \"SSC CGL Tier 1\",\n  \"testSeries\": \"{{testSeriesId}}\",\n  \"category\": \"{{categoryId}}\",\n  \"isPublished\": true,\n  \"isPaid\": false,\n  \"sections\": [\n    {\n      \"name\": \"General Intelligence & Reasoning\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"General Awareness\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"Quantitative Aptitude\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"English Comprehension\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1031,10 +1055,10 @@
                 "{{testId}}"
               ]
             },
-            "description": "",
+            "description": "Sending sections recomputes duration as the sum of the new sections. Omitting sections leaves duration untouched.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sections\": [\n    {\n      \"name\": \"General Intelligence & Reasoning\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 60\n    }\n  ]\n}",
+              "raw": "{\n  \"sections\": [\n    {\n      \"name\": \"General Intelligence & Reasoning\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"General Awareness\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"Quantitative Aptitude\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    },\n    {\n      \"name\": \"English Comprehension\",\n      \"no_of_questions\": 25,\n      \"no_of_marks\": 50,\n      \"duration\": 15\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"

@@ -31,6 +31,16 @@ const testSeriesSchema = new mongoose.Schema(
       default: "",
     },
 
+    notificationPdf: {
+      type: String,
+      default: "",
+    },
+
+    infoPdf: {
+      type: String,
+      default: "",
+    },
+
     totalTests: {
       type: Number,
       default: 0,

@@ -65,6 +65,7 @@ const testSchema = new mongoose.Schema(
     sections: {
       type: [sectionSchema],
       default: [],
+      validate: [(arr) => arr.length > 0, "At least one section is required"],
     },
 
     isActive: {

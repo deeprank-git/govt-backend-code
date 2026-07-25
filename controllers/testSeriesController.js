@@ -5,6 +5,27 @@ import path from "path";
 import TestSeries from "../models/TestSeries.js";
 import { UPLOAD_DIR } from "../middleware/upload.js";
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Every importantDates value must be an exact { from, to } date range (a
+// single day is just from === to) — free-text entries like "July 2025" or
+// "24/10/2025" are rejected so the data stays sortable/comparable.
+const validateImportantDates = (importantDates) => {
+  for (const [label, value] of Object.entries(importantDates)) {
+    const valid =
+      value &&
+      typeof value === "object" &&
+      DATE_RE.test(value.from) &&
+      DATE_RE.test(value.to) &&
+      new Date(value.from) <= new Date(value.to);
+    if (!valid) {
+      throw new Error(`"${label}" must be { from: "YYYY-MM-DD", to: "YYYY-MM-DD" } with from <= to`);
+    }
+  }
+};
+
+const FILE_FIELDS = ["image", "notificationPdf", "infoPdf"];
+
 // ✅ GET all (filter by category optional)
 // Students/instructors only see published + active series. Admin sees all.
 export const getTestSeries = async (req, res) => {
@@ -81,8 +102,22 @@ export const createTestSeries = async (req, res) => {
     const { importantDates, ...rest } = req.body;
     const payload = { ...rest, createdBy: req.user.id };
 
-    if (importantDates !== undefined) payload.importantDates = JSON.parse(importantDates);
-    if (req.file) payload.image = `/uploads/${req.file.filename}`;
+    if (importantDates !== undefined) {
+      try {
+        payload.importantDates = JSON.parse(importantDates);
+        validateImportantDates(payload.importantDates);
+      } catch (parseError) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid importantDates: ${parseError.message}`,
+        });
+      }
+    }
+
+    for (const field of FILE_FIELDS) {
+      const uploaded = req.files?.[field]?.[0];
+      if (uploaded) payload[field] = `/uploads/${uploaded.filename}`;
+    }
 
     const series = await TestSeries.create(payload);
 
@@ -106,9 +141,21 @@ export const updateTestSeries = async (req, res) => {
     const { importantDates, ...rest } = req.body;
     const payload = { ...rest };
 
-    if (importantDates !== undefined) payload.importantDates = JSON.parse(importantDates);
+    if (importantDates !== undefined) {
+      try {
+        payload.importantDates = JSON.parse(importantDates);
+        validateImportantDates(payload.importantDates);
+      } catch (parseError) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid importantDates: ${parseError.message}`,
+        });
+      }
+    }
 
-    if (req.file) {
+    const uploadedFields = FILE_FIELDS.filter((field) => req.files?.[field]?.[0]);
+
+    if (uploadedFields.length) {
       const existing = await TestSeries.findById(req.params.id);
       if (!existing) {
         return res.status(404).json({
@@ -116,9 +163,12 @@ export const updateTestSeries = async (req, res) => {
           message: "Test Series not found",
         });
       }
-      payload.image = `/uploads/${req.file.filename}`;
-      if (existing.image) {
-        fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.image)), () => {});
+      for (const field of uploadedFields) {
+        const uploaded = req.files[field][0];
+        payload[field] = `/uploads/${uploaded.filename}`;
+        if (existing[field]) {
+          fs.unlink(path.join(UPLOAD_DIR, path.basename(existing[field])), () => {});
+        }
       }
     }
 

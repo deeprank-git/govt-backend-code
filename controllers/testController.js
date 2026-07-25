@@ -3,6 +3,11 @@
 import Test from "../models/Test.js";
 import TestSeries from "../models/TestSeries.js";
 
+// Test.duration has no other source of truth (unlike totalQuestions/totalMarks,
+// which stay in sync with actual Question docs via recalcTestTotals in
+// questionController.js), so it's fully derived from sections here.
+const computeDuration = (sections) => sections.reduce((sum, s) => sum + (Number(s.duration) || 0), 0);
+
 // ✅ GET tests (by category or series)
 // Students/instructors only see published + active tests.
 // Admin sees everything (including drafts) for management purposes.
@@ -82,7 +87,15 @@ export const getTestById = async (req, res) => {
 // ✅ CREATE test
 export const createTest = async (req, res) => {
   try {
-    const test = await Test.create({ ...req.body, createdBy: req.user.id });
+    const { sections, duration, ...rest } = req.body;
+    const payload = { ...rest, createdBy: req.user.id };
+
+    if (sections !== undefined) {
+      payload.sections = sections;
+      payload.duration = computeDuration(sections);
+    }
+
+    const test = await Test.create(payload);
 
     // 🔥 update totalTests in series (if this test belongs to one)
     if (test.testSeries) {
@@ -116,7 +129,15 @@ export const updateTest = async (req, res) => {
       });
     }
 
-    const updated = await Test.findByIdAndUpdate(req.params.id, req.body, {
+    const { sections, duration, ...rest } = req.body;
+    const payload = { ...rest };
+
+    if (sections !== undefined) {
+      payload.sections = sections;
+      payload.duration = computeDuration(sections);
+    }
+
+    const updated = await Test.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true,
     });
