@@ -31,12 +31,17 @@ const testSeriesSchema = new mongoose.Schema(
       default: "",
     },
 
-    notificationPdf: {
+    officialWebsite: {
       type: String,
       default: "",
     },
 
-    infoPdf: {
+    applyLink: {
+      type: String,
+      default: "",
+    },
+
+    notificationPdf: {
       type: String,
       default: "",
     },

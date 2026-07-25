@@ -13,14 +13,13 @@ const router = express.Router();
 
 router.use(authMiddleware, authorize("admin"));
 
-const testSeriesUpload = upload.fields([
+const uploadFields = upload.fields([
   { name: "image", maxCount: 1 },
   { name: "notificationPdf", maxCount: 1 },
-  { name: "infoPdf", maxCount: 1 },
 ]);
 
-router.post("/", testSeriesUpload, createTestSeries);
-router.patch("/:id", testSeriesUpload, updateTestSeries);
+router.post("/", uploadFields, createTestSeries);
+router.patch("/:id", uploadFields, updateTestSeries);
 router.delete("/:id", deleteTestSeries);
 
 export default router;

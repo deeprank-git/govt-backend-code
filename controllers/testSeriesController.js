@@ -115,8 +115,10 @@ export const createTestSeries = async (req, res) => {
     }
 
     for (const field of FILE_FIELDS) {
-      const uploaded = req.files?.[field]?.[0];
-      if (uploaded) payload[field] = `/uploads/${uploaded.filename}`;
+      const uploaded = req.files?.image?.[0]s?.[field]?.[0];
+      if (uploaded) payload[field] = `/uploads/${uploadeds.image[0].filename}`;
+    if (req.files?.notificationPdf?.[0])
+      payload.notificationPdf = `/uploads/${req.files.notificationPdf[0].filename}`;
     }
 
     const series = await TestSeries.create(payload);
@@ -141,21 +143,9 @@ export const updateTestSeries = async (req, res) => {
     const { importantDates, ...rest } = req.body;
     const payload = { ...rest };
 
-    if (importantDates !== undefined) {
-      try {
-        payload.importantDates = JSON.parse(importantDates);
-        validateImportantDates(payload.importantDates);
-      } catch (parseError) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid importantDates: ${parseError.message}`,
-        });
-      }
-    }
+    if (importantDates !== undefined) payload.importantDates = JSON.parse(importantDates);
 
-    const uploadedFields = FILE_FIELDS.filter((field) => req.files?.[field]?.[0]);
-
-    if (uploadedFields.length) {
+    if (req.files?.image?.[0] || req.files?.notificationPdf?.[0]) {
       const existing = await TestSeries.findById(req.params.id);
       if (!existing) {
         return res.status(404).json({
@@ -163,11 +153,16 @@ export const updateTestSeries = async (req, res) => {
           message: "Test Series not found",
         });
       }
-      for (const field of uploadedFields) {
-        const uploaded = req.files[field][0];
-        payload[field] = `/uploads/${uploaded.filename}`;
-        if (existing[field]) {
-          fs.unlink(path.join(UPLOAD_DIR, path.basename(existing[field])), () => {});
+      if (req.files.image?.[0]) {
+        payload.image = `/uploads/${req.files.image[0].filename}`;
+        if (existing.image) {
+          fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.image)), () => {});
+        }
+      }
+      if (req.files.notificationPdf?.[0]) {
+        payload.notificationPdf = `/uploads/${req.files.notificationPdf[0].filename}`;
+        if (existing.notificationPdf) {
+          fs.unlink(path.join(UPLOAD_DIR, path.basename(existing.notificationPdf)), () => {});
         }
       }
     }
