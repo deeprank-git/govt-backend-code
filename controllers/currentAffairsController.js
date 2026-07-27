@@ -41,7 +41,6 @@ export const getCurrentAffairs = async (req, res) => {
     }
 
     const items = await query
-      .select("-content") // list view: skip the full body, keep it light
       .sort({ date: -1 })
       .limit(Number(req.query.limit) || 50);
 
