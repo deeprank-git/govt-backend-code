@@ -1,5 +1,5 @@
 import express from "express";
-import authMiddleware from "../middleware/authMiddleware.js";
+import authMiddleware, { optionalAuth } from "../middleware/authMiddleware.js";
 import authorize from "../middleware/authorize.js";
 
 import {
@@ -9,17 +9,18 @@ import {
 
 const router = express.Router();
 
+// ✅ Public — no login required (2026-07-28)
 router.get(
   "/",
-  authMiddleware,
-  authorize("student", "admin", "instructor"),
+  // DISABLED-FOR-PUBLIC-ACCESS 2026-07-28: was authMiddleware, authorize("student", "admin", "instructor")
+  optionalAuth,
   getTestSeries
 );
 
 router.get(
   "/:id",
-  authMiddleware,
-  authorize("student", "admin", "instructor"),
+  // DISABLED-FOR-PUBLIC-ACCESS 2026-07-28: was authMiddleware, authorize("student", "admin", "instructor")
+  optionalAuth,
   getTestSeriesById
 );
 
