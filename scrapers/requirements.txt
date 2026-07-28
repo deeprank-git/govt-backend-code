@@ -1,0 +1,6 @@
+beautifulsoup4
+crawl4ai
+lxml
+pymongo
+python-dotenv
+requests

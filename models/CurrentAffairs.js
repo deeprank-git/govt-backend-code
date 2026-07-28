@@ -42,6 +42,26 @@ const currentAffairsSchema = new mongoose.Schema(
       default: "",
     },
 
+    url: {
+      type: String,
+      default: "",
+    },
+
+    source: {
+      type: String,
+      default: "",
+    },
+
+    source_link: {
+      type: String,
+      default: "",
+    },
+
+    category_link: {
+      type: String,
+      default: "",
+    },
+
     isPublished: {
       type: Boolean,
       default: false,
