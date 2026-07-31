@@ -1,4 +1,7 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import path from 'path';
+dotenv.config({ path: path.join(path.dirname(fileURLToPath(import.meta.url)), '.env') });
 import mongoose from 'mongoose';
 import express from 'express';
 import cors from 'cors';
@@ -45,11 +48,9 @@ import { startAutoSubmitJob } from "./cron/autoSubmitJob.js";
 
 const app = express();
 
-const allowedOrigins = [
-  'http://localhost:8080',      
-  'http://localhost:3000',
-  'http://89.116.20.193:8080'      
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://localhost:8080'];
 
 app.use(cors({
   origin: function (origin, callback) {
