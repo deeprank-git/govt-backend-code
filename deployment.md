@@ -121,6 +121,8 @@ curl http://localhost:5000/api/health
 
 ## 8. Nginx site config
 
+### Backend (api.testopy.com → port 5006)
+
 ```bash
 sudo tee /etc/nginx/sites-available/api.testopy.com > /dev/null <<'EOF'
 server {
@@ -131,7 +133,7 @@ server {
     client_max_body_size 25M;
 
     location / {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://localhost:5006;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -150,6 +152,33 @@ sudo systemctl reload nginx
 ```
 
 At this point `http://api.testopy.com/api/health` should respond (once DNS has propagated).
+
+### Frontend (testopy.com → port 5005)
+
+```bash
+sudo tee /etc/nginx/sites-available/testopy.com > /dev/null <<'EOF'
+server {
+    listen 80;
+    server_name testopy.com www.testopy.com;
+
+    location / {
+        proxy_pass http://localhost:5005;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+
+sudo ln -s /etc/nginx/sites-available/testopy.com /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
 
 ---
 
