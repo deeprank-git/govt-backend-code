@@ -10,6 +10,8 @@ import {
   submitTest,
   getResult,
   getMyAttempts,
+  pauseAttempt,
+  resumeAttempt,
 } from "../controllers/testAttemptController.js";
 
 const router = express.Router();
@@ -22,5 +24,7 @@ router.get("/:id/question/:index", getQuestionByIndex);
 router.post("/save-answer", saveAnswer);
 router.post("/submit", submitTest);
 router.get("/:id/result", getResult);
+router.post("/:attemptId/pause", pauseAttempt);
+router.post("/:attemptId/resume", resumeAttempt);
 
 export default router;

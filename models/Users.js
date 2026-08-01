@@ -75,6 +75,25 @@ const UserSchema = new mongoose.Schema(
       type: Date,
     },
 
+    // Current-affairs reading streak (see currentAffairsController.js
+    // recordCurrentAffairsView / getCurrentAffairsStreak). `lastActiveDate`
+    // is date-only, always normalized to midnight UTC — same convention the
+    // scrapers use for CurrentAffairs.date.
+    currentStreak: {
+      type: Number,
+      default: 0,
+    },
+
+    longestStreak: {
+      type: Number,
+      default: 0,
+    },
+
+    lastActiveDate: {
+      type: Date,
+      default: null,
+    },
+
     // Password reset fields
     // Stores the hashed reset token only.
     resetPasswordToken: {
