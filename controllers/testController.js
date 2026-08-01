@@ -71,7 +71,9 @@ export const getTests = async (req, res) => {
 // ✅ GET single test
 export const getTestById = async (req, res) => {
   try {
-    const test = await Test.findById(req.params.id).lean();
+    const test = await Test.findById(req.params.id)
+      .populate("testSeries", "name image")
+      .lean();
 
     if (!test || !test.isActive) {
       return res.status(404).json({

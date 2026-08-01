@@ -477,7 +477,11 @@ export const getLeaderboard = async (req, res) => {
 export const getMyAttempts = async (req, res) => {
   try {
     const attempts = await TestAttempt.find({ user: req.user.id })
-      .populate("test", "title duration totalMarks")
+      .populate({
+        path: "test",
+        select: "title duration totalMarks testSeries",
+        populate: { path: "testSeries", select: "name image" },
+      })
       .sort({ createdAt: -1 })
       .select("test status score correctCount wrongCount startedAt submittedAt");
 
