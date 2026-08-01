@@ -46,12 +46,11 @@ import { UPLOAD_DIR } from "./middleware/upload.js";
 
 const app = express();
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ['http://localhost:3000', 'http://localhost:8080'];
-
 app.use(cors({
   origin: function (origin, callback) {
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+      : ['http://localhost:3000', 'http://localhost:8080'];
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
