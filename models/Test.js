@@ -96,6 +96,20 @@ const testSchema = new mongoose.Schema(
       default: false,
     },
 
+    // Optional abuse guards on the pause/resume feature (see
+    // testAttemptController.js pauseAttempt). `null` (the default) means
+    // unlimited — existing tests are unaffected until an admin opts in by
+    // setting one of these.
+    maxPauses: {
+      type: Number,
+      default: null,
+    },
+
+    maxPauseDurationMs: {
+      type: Number,
+      default: null,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
