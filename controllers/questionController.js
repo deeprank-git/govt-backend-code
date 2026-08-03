@@ -7,7 +7,9 @@ import Test from "../models/Test.js";
 // Columns the bulk-upload CSV template ships with, and that bulkCreateQuestions
 // expects on the way back in. correctAnswer is 1-based here (matches option1..4)
 // since that's what a non-technical admin filling the sheet in Excel expects —
-// it's converted to the stored 0-based index during parsing.
+// it's converted to the stored 0-based index during parsing. An optional
+// `option5` column (not in this base template) is also accepted per row, for
+// banking-style exams that use 5 options.
 const CSV_COLUMNS = [
   "test",
   "section",
@@ -274,12 +276,15 @@ export const bulkCreateQuestions = async (req, res) => {
       const row = rows[i];
       const rowNumber = i + 2;
 
-      const options = [row.option1, row.option2, row.option3, row.option4];
+      const requiredOptions = [row.option1, row.option2, row.option3, row.option4];
+      // option5 is optional — banking-style exams (e.g. IBPS) use 5 options.
+      const hasOption5 = row.option5 !== undefined && row.option5 !== null && row.option5 !== "";
+      const options = hasOption5 ? [...requiredOptions, row.option5] : requiredOptions;
 
-      if (!row.test || !row.section || !row.questionText || options.some((opt) => !opt)) {
+      if (!row.test || !row.section || !row.questionText || requiredOptions.some((opt) => !opt)) {
         return res.status(400).json({
           success: false,
-          message: `Row ${rowNumber}: test, section, questionText and all 4 options are required`,
+          message: `Row ${rowNumber}: test, section, questionText and options 1-4 are required (option5 is optional)`,
         });
       }
 
@@ -304,10 +309,11 @@ export const bulkCreateQuestions = async (req, res) => {
       const sectionId = sectionDoc._id;
 
       const correctAnswer = Number(row.correctAnswer) - 1; // CSV is 1-based
-      if (!Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer > 3) {
+      const maxOption = options.length - 1;
+      if (!Number.isInteger(correctAnswer) || correctAnswer < 0 || correctAnswer > maxOption) {
         return res.status(400).json({
           success: false,
-          message: `Row ${rowNumber}: correctAnswer must be a number from 1 to 4`,
+          message: `Row ${rowNumber}: correctAnswer must be a number from 1 to ${options.length}`,
         });
       }
 

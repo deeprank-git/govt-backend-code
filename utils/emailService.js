@@ -26,13 +26,12 @@ const getTransporter = () => {
 };
 
 /**
- * Send password reset email
+ * Send password reset OTP email
  * @param {string} email - User's email address
- * @param {string} resetToken - Reset token
- * @param {string} resetUrl - Full reset URL (e.g., https://yourdomain.com/reset-password?token=...)
+ * @param {string} otp - 6-digit one-time code
  * @returns {Promise<Object>} - Nodemailer response
  */
-export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
+export const sendPasswordResetOtpEmail = async (email, otp) => {
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -42,7 +41,7 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background-color: #007bff; color: white; padding: 20px; border-radius: 5px 5px 0 0; }
           .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 5px 5px; }
-          .button { display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .otp { display: inline-block; background-color: #fff; color: #007bff; font-size: 32px; font-weight: bold; letter-spacing: 8px; padding: 16px 24px; border-radius: 5px; margin: 20px 0; border: 1px dashed #007bff; }
           .footer { margin-top: 20px; font-size: 12px; color: #666; text-align: center; }
           .warning { background-color: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 5px; margin-top: 20px; }
         </style>
@@ -54,22 +53,17 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
           </div>
           <div class="content">
             <p>Hello,</p>
-            <p>We received a request to reset your password. Click the button below to proceed:</p>
-            
-            <a href="${resetUrl}" class="button">Reset Password</a>
-            
-            <p>Or copy and paste this link in your browser:</p>
-            <p style="word-break: break-all; background-color: #fff; padding: 10px; border-left: 3px solid #007bff;">
-              ${resetUrl}
-            </p>
-            
-            <p><strong>This link expires in 1 hour.</strong></p>
-            
+            <p>We received a request to reset your password. Use the code below to continue:</p>
+
+            <div class="otp">${otp}</div>
+
+            <p><strong>This code expires in 10 minutes.</strong></p>
+
             <div class="warning">
               <p><strong>⚠️ Security Notice:</strong></p>
-              <p>If you did not request a password reset, please ignore this email or contact our support team immediately. Your account is safe as long as you don't click the link above.</p>
+              <p>If you did not request a password reset, please ignore this email or contact our support team immediately. Never share this code with anyone.</p>
             </div>
-            
+
             <p>Best regards,<br>The GovtPrep Team</p>
           </div>
           <div class="footer">
@@ -83,21 +77,21 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
 
   const textContent = `
     Password Reset Request
-    
+
     Hello,
-    
-    We received a request to reset your password. Click the link below or copy it in your browser:
-    
-    ${resetUrl}
-    
-    This link expires in 1 hour.
-    
+
+    We received a request to reset your password. Use this code to continue:
+
+    ${otp}
+
+    This code expires in 10 minutes.
+
     Security Notice:
-    If you did not request a password reset, please ignore this email or contact our support team immediately.
-    
+    If you did not request a password reset, please ignore this email or contact our support team immediately. Never share this code with anyone.
+
     Best regards,
     The GovtPrep Team
-    
+
     © 2026 GovtPrep. All rights reserved.
   `;
 
@@ -105,7 +99,7 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.GMAIL_USER || 'noreply@govtprep.com',
       to: email,
-      subject: 'Password Reset Request - GovtPrep',
+      subject: 'Your Password Reset Code - GovtPrep',
       text: textContent,
       html: htmlContent,
     };
@@ -113,7 +107,7 @@ export const sendPasswordResetEmail = async (email, resetToken, resetUrl) => {
     const info = await getTransporter().sendMail(mailOptions);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending password reset email:', error);
+    console.error('Error sending password reset OTP email:', error);
     throw error;
   }
 };
@@ -183,7 +177,7 @@ export const verifyEmailService = async () => {
 };
 
 export default {
-  sendPasswordResetEmail,
+  sendPasswordResetOtpEmail,
   sendConfirmationEmail,
   verifyEmailService,
 };

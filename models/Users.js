@@ -94,16 +94,24 @@ const UserSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Password reset fields
-    // Stores the hashed reset token only.
-    resetPasswordToken: {
+    // Password reset fields (OTP-based).
+    // Stores the hashed OTP only, never the raw code.
+    resetPasswordOtp: {
       type: String,
       select: false,
     },
 
-    resetPasswordExpires: {
+    resetPasswordOtpExpires: {
       type: Date,
       select: false,
+    },
+
+    // Wrong-OTP guesses since the last OTP was issued. Reset to 0 whenever
+    // a fresh OTP is generated. Caps brute-forcing a 6-digit code.
+    resetPasswordOtpAttempts: {
+      type: Number,
+      select: false,
+      default: 0,
     },
   },
   {
