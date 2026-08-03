@@ -4,7 +4,7 @@ import User from '../models/Users.js';
 import RefreshToken from '../models/RefreshToken.js';
 import generateToken from '../utils/generateToken.js';
 import crypto from 'crypto';
-import { sendPasswordResetEmail } from '../utils/emailService.js';
+import { sendPasswordResetOtpEmail } from '../utils/emailService.js';
 import { toUploadUrl } from '../middleware/upload.js';
 
 // Mongo duplicate-key error (e.g. email or username already taken) —
@@ -13,7 +13,8 @@ const isDuplicateKeyError = (error) => error.code === 11000;
 const duplicateKeyField = (error) => Object.keys(error.keyPattern || {})[0] || "field";
 
 const REFRESH_TOKEN_DAYS = 30;
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
+const RESET_OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const RESET_OTP_MAX_ATTEMPTS = 5;
 
 // Issues a long-lived refresh token, stores it in Mongo (so it can be
 // revoked / rotated / listed per-device), and returns the raw string to
@@ -171,12 +172,12 @@ export const logoutUser = async (req, res) => {
 
 // POST /api/auth/forgot-password — always returns the same generic message,
 // whether or not the email is registered, so this endpoint can't be used to
-// enumerate accounts. The raw token is only ever sent by email; the DB only
+// enumerate accounts. The raw OTP is only ever sent by email; the DB only
 // ever stores its sha256 hash.
 export const forgotPassword = async (req, res) => {
     const genericResponse = {
         success: true,
-        message: "If an account with that email exists, a password reset link has been sent.",
+        message: "If an account with that email exists, a password reset code has been sent.",
     };
 
     try {
@@ -190,19 +191,17 @@ export const forgotPassword = async (req, res) => {
             return res.status(200).json(genericResponse);
         }
 
-        const rawToken = crypto.randomBytes(32).toString("hex");
-        user.resetPasswordToken = crypto.createHash("sha256").update(rawToken).digest("hex");
-        user.resetPasswordExpires = new Date(Date.now() + RESET_TOKEN_TTL_MS);
+        const otp = crypto.randomInt(100000, 1000000).toString();
+        user.resetPasswordOtp = crypto.createHash("sha256").update(otp).digest("hex");
+        user.resetPasswordOtpExpires = new Date(Date.now() + RESET_OTP_TTL_MS);
+        user.resetPasswordOtpAttempts = 0;
         await user.save();
 
-        const frontendUrl = process.env.FRONTEND_URL || "http://89.116.20.193:8080";
-        const resetUrl = `${frontendUrl}/auth/reset-password?token=${rawToken}`;
-
         try {
-            await sendPasswordResetEmail(user.email, rawToken, resetUrl);
+            await sendPasswordResetOtpEmail(user.email, otp);
         } catch (emailError) {
             // Don't leak email-delivery failures to the client — same generic response either way.
-            console.error("Failed to send password reset email:", emailError);
+            console.error("Failed to send password reset OTP email:", emailError);
         }
 
         res.status(200).json(genericResponse);
@@ -211,30 +210,44 @@ export const forgotPassword = async (req, res) => {
     }
 };
 
-// POST /api/auth/reset-password — consumes the token so it can't be replayed.
+// POST /api/auth/reset-password — verifies the emailed OTP and sets the new
+// password in one step. The OTP is consumed (and its attempt counter reset)
+// on success so it can't be replayed; wrong guesses count against
+// RESET_OTP_MAX_ATTEMPTS so a 6-digit code can't just be brute-forced within
+// its 10-minute window.
 export const resetPassword = async (req, res) => {
     try {
-        const { token, newPassword } = req.body;
-        if (!token || !newPassword) {
-            return res.status(400).json({ success: false, message: "token and newPassword are required" });
+        const { email, otp, newPassword } = req.body;
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ success: false, message: "email, otp and newPassword are required" });
         }
         if (newPassword.length < 6) {
             return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
         }
 
-        const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-        const user = await User.findOne({
-            resetPasswordToken: hashedToken,
-            resetPasswordExpires: { $gt: new Date() },
-        }).select("+resetPasswordToken +resetPasswordExpires");
+        const user = await User.findOne({ email }).select(
+            "+resetPasswordOtp +resetPasswordOtpExpires +resetPasswordOtpAttempts"
+        );
 
-        if (!user) {
-            return res.status(400).json({ success: false, message: "Invalid or expired reset token" });
+        if (!user || !user.resetPasswordOtp || !user.resetPasswordOtpExpires || user.resetPasswordOtpExpires < new Date()) {
+            return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+        }
+
+        if (user.resetPasswordOtpAttempts >= RESET_OTP_MAX_ATTEMPTS) {
+            return res.status(400).json({ success: false, message: "Too many incorrect attempts. Please request a new OTP." });
+        }
+
+        const hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+        if (hashedOtp !== user.resetPasswordOtp) {
+            user.resetPasswordOtpAttempts += 1;
+            await user.save();
+            return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
         }
 
         user.password = newPassword; // pre('save') hook re-hashes automatically
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpires = undefined;
+        user.resetPasswordOtp = undefined;
+        user.resetPasswordOtpExpires = undefined;
+        user.resetPasswordOtpAttempts = 0;
         await user.save();
 
         res.status(200).json({ success: true, message: "Password has been reset successfully" });
@@ -254,9 +267,12 @@ export const getMe = async (req, res) => {
 // PUT /api/users/me — a user can update their own profile: name/email/mobile
 // /password plus username, address, country, city and profile picture.
 // role and isActive are intentionally NOT editable here (admin-only, see below).
+// Changing the password requires the correct currentPassword — this is the
+// logged-in "change password" flow, distinct from the OTP-based forgot-password
+// flow below (which proves identity via email access instead).
 export const updateMe = async (req, res) => {
     try {
-        const { name, email, mobile, username, address, country, city, password } = req.body;
+        const { name, email, mobile, username, address, country, city, password, currentPassword } = req.body;
 
         const user = await User.findById(req.user.id);
         if (!user) {
@@ -270,7 +286,20 @@ export const updateMe = async (req, res) => {
         if (address !== undefined) user.address = address;
         if (country !== undefined) user.country = country;
         if (city !== undefined) user.city = city;
-        if (password) user.password = password; // pre('save') hook re-hashes automatically
+
+        if (password) {
+            if (!currentPassword) {
+                return res.status(400).json({ success: false, message: "Current password is required to set a new password" });
+            }
+            if (password.length < 6) {
+                return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
+            }
+            const isMatch = await user.comparePassword(currentPassword);
+            if (!isMatch) {
+                return res.status(400).json({ success: false, message: "Current password is incorrect" });
+            }
+            user.password = password; // pre('save') hook re-hashes automatically
+        }
 
         // New profile picture uploaded — swap it in and best-effort clean up the old file.
         if (req.file) {

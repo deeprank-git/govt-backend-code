@@ -18,7 +18,7 @@ const questionSchema = new mongoose.Schema(
 
     options: {
       type: [optionSchema],
-      validate: [arr => arr.length === 4, "Must have exactly 4 options"],
+      validate: [arr => arr.length === 4 || arr.length === 5, "Must have 4 or 5 options"],
     },
 
     correctAnswer: {
