@@ -1,26 +1,32 @@
 import nodemailer from 'nodemailer';
 
-// Gmail SMTP — free, used for now. Requires a Google Account with 2FA enabled
-// and an "App Password" (not the regular account password) in GMAIL_PASSWORD.
-// Gmail SMTP has sending-rate limits and is flagged by some providers, so it
-// should be swapped for a dedicated transactional email provider before
-// this goes to production at any real volume.
 let transporter;
 
-// Built lazily on first use rather than at module load — GMAIL_USER/GMAIL_PASSWORD
-// come from process.env, which depends on dotenv having already run. Reading them
-// eagerly at import time ties correctness to import order (this module ends up
-// loaded via routes -> controllers -> here, which can easily happen before
-// dotenv.config() does); reading them on first send avoids that entirely.
+// Built lazily on first use — env vars depend on dotenv having already run.
 const getTransporter = () => {
   if (!transporter) {
-    transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
-      },
-    });
+    const service = process.env.EMAIL_SERVICE;
+
+    if (service === 'custom') {
+      transporter = nodemailer.createTransport({
+        host: 'smtpout.secureserver.net',
+        port: 465,
+        secure: true,
+        auth: {
+          user: process.env.GO_DADDY_EMAIL_USER,
+          pass: process.env.GO_DADDY_EMAIL_PASSWORD,
+        },
+      });
+    } else {
+      // default: gmail
+      transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_PASSWORD,
+        },
+      });
+    }
   }
   return transporter;
 };
@@ -31,6 +37,11 @@ const getTransporter = () => {
  * @param {string} otp - 6-digit one-time code
  * @returns {Promise<Object>} - Nodemailer response
  */
+const getSenderAddress = () =>
+  process.env.EMAIL_SERVICE === 'custom'
+    ? process.env.GO_DADDY_EMAIL_FROM || process.env.GO_DADDY_EMAIL_USER
+    : process.env.EMAIL_FROM || process.env.GMAIL_USER || 'noreply@Testopy.com';
+
 export const sendPasswordResetOtpEmail = async (email, otp) => {
   const htmlContent = `
     <!DOCTYPE html>
@@ -64,10 +75,10 @@ export const sendPasswordResetOtpEmail = async (email, otp) => {
               <p>If you did not request a password reset, please ignore this email or contact our support team immediately. Never share this code with anyone.</p>
             </div>
 
-            <p>Best regards,<br>The GovtPrep Team</p>
+            <p>Best regards,<br>The Testopy Team</p>
           </div>
           <div class="footer">
-            <p>© 2026 GovtPrep. All rights reserved.</p>
+            <p>© 2026 Testopy. All rights reserved.</p>
             <p>This is an automated email. Please do not reply.</p>
           </div>
         </div>
@@ -90,16 +101,16 @@ export const sendPasswordResetOtpEmail = async (email, otp) => {
     If you did not request a password reset, please ignore this email or contact our support team immediately. Never share this code with anyone.
 
     Best regards,
-    The GovtPrep Team
+    The Testopy Team
 
-    © 2026 GovtPrep. All rights reserved.
+    © 2026 Testopy. All rights reserved.
   `;
 
   try {
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.GMAIL_USER || 'noreply@govtprep.com',
+      from: getSenderAddress(),
       to: email,
-      subject: 'Your Password Reset Code - GovtPrep',
+      subject: 'Your Password Reset Code - Testopy',
       text: textContent,
       html: htmlContent,
     };
@@ -134,12 +145,12 @@ export const sendConfirmationEmail = async (email, confirmationUrl) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>Welcome to GovtPrep!</h1>
+            <h1>Welcome to Testopy!</h1>
           </div>
           <div class="content">
             <p>Thank you for signing up. Please confirm your email address by clicking the button below:</p>
             <a href="${confirmationUrl}" class="button">Confirm Email</a>
-            <p>Best regards,<br>The GovtPrep Team</p>
+            <p>Best regards,<br>The Testopy Team</p>
           </div>
         </div>
       </body>
@@ -148,9 +159,9 @@ export const sendConfirmationEmail = async (email, confirmationUrl) => {
 
   try {
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.GMAIL_USER || 'noreply@govtprep.com',
+      from: getSenderAddress(),
       to: email,
-      subject: 'Confirm Your Email - GovtPrep',
+      subject: 'Confirm Your Email - Testopy',
       html: htmlContent,
     };
 
