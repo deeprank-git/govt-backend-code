@@ -2,11 +2,51 @@
 
 import Test from "../models/Test.js";
 import TestSeries from "../models/TestSeries.js";
+import Question from "../models/Question.js";
 
 // Test.duration has no other source of truth (unlike totalQuestions/totalMarks,
 // which stay in sync with actual Question docs via recalcTestTotals in
 // questionController.js), so it's fully derived from sections here.
 const computeDuration = (sections) => sections.reduce((sum, s) => sum + (Number(s.duration) || 0), 0);
+
+// Returns an array of error strings describing every invalid question.
+// Empty array means all questions are valid.
+// `sectionNames` is the array of section name strings from the request body.
+const validateQuestions = (questions, sectionNames) => {
+  const errors = [];
+  const nameSet = new Set(sectionNames);
+
+  questions.forEach((q, i) => {
+    const prefix = `questions[${i}]`;
+
+    if (!q.section) {
+      errors.push(`${prefix}: section (name string) is required`);
+    } else if (!nameSet.has(q.section)) {
+      errors.push(`${prefix}: section "${q.section}" not found in sections`);
+    }
+
+    if (!q.questionText) errors.push(`${prefix}: questionText is required`);
+
+    const opts = Array.isArray(q.options) ? q.options : [];
+    if (opts.length < 4 || opts.length > 5) {
+      errors.push(`${prefix}: options must have 4 or 5 items`);
+    }
+
+    const maxIdx = opts.length - 1;
+    const ca = Number(q.correctAnswer);
+    if (
+      q.correctAnswer === undefined ||
+      q.correctAnswer === null ||
+      !Number.isInteger(ca) ||
+      ca < 0 ||
+      ca > maxIdx
+    ) {
+      errors.push(`${prefix}: correctAnswer must be an integer from 0 to ${maxIdx}`);
+    }
+  });
+
+  return errors;
+};
 
 // ✅ GET tests (by category or series)
 // Students/instructors only see published + active tests.
@@ -16,8 +56,8 @@ export const getTests = async (req, res) => {
     const filter = {};
 
     if (req.user?.role === "admin") {
-      // admin can optionally filter by isActive/isPublished too
-      if (req.query.isActive !== undefined) filter.isActive = req.query.isActive === "true";
+      // Admin defaults to active tests; pass ?isActive=false to see soft-deleted ones
+      filter.isActive = req.query.isActive !== "false";
       if (req.query.isPublished !== undefined)
         filter.isPublished = req.query.isPublished === "true";
     } else {
@@ -178,6 +218,130 @@ export const updateTest = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error updating test",
+      error: error.message,
+    });
+  }
+};
+
+// POST /api/admin/tests/with-questions
+// Creates a Test and its Questions atomically.
+// If question insert fails after the Test is saved, the Test is deleted and
+// the TestSeries counter is reversed so nothing is left in a partial state.
+export const createTestWithQuestions = async (req, res) => {
+  try {
+    const { questions = [], sections, ...testFields } = req.body;
+
+    // 1. Upfront validation — no DB writes yet
+    if (!sections || sections.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one section is required",
+      });
+    }
+
+    const sectionNames = sections.map((s) => s.name);
+    const questionErrors = validateQuestions(questions, sectionNames);
+    if (questionErrors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        errors: questionErrors,
+      });
+    }
+
+    // 2. Create the Test — sections get their Mongoose _id values here
+    let test;
+    try {
+      test = await Test.create({
+        ...testFields,
+        sections,
+        duration: computeDuration(sections),
+        createdBy: req.user.id,
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: "Error creating test",
+        error: err.message,
+      });
+    }
+
+    // 3. Increment TestSeries counter (mirrors createTest behaviour)
+    if (test.testSeries) {
+      await TestSeries.findByIdAndUpdate(test.testSeries, { $inc: { totalTests: 1 } });
+    }
+
+    // 4. If no questions supplied, return early
+    if (questions.length === 0) {
+      return res.status(201).json({
+        success: true,
+        message: "Test created",
+        data: { test, questions: [] },
+      });
+    }
+
+    // 5. Map section name -> section subdoc _id (now that the Test exists)
+    const sectionNameToId = {};
+    test.sections.forEach((s) => {
+      sectionNameToId[s.name] = s._id;
+    });
+
+    // 6. Build question docs; auto-assign order per section if not given
+    const orderBySection = {};
+    const questionDocs = questions.map((q) => {
+      const sectionId = sectionNameToId[q.section];
+      const key = String(sectionId);
+      if (orderBySection[key] === undefined) orderBySection[key] = 0;
+      const order =
+        q.order !== undefined && q.order !== null
+          ? Number(q.order)
+          : orderBySection[key]++;
+      return {
+        test: test._id,
+        section: sectionId,
+        questionText: q.questionText,
+        options: q.options,
+        correctAnswer: Number(q.correctAnswer),
+        marks: q.marks !== undefined ? Number(q.marks) : 1,
+        explanation: q.explanation ?? "",
+        order,
+      };
+    });
+
+    // 7. Bulk insert questions — roll back the Test on failure
+    let insertedQuestions;
+    try {
+      insertedQuestions = await Question.insertMany(questionDocs, { ordered: true });
+    } catch (insertErr) {
+      await Test.findByIdAndDelete(test._id);
+      if (test.testSeries) {
+        await TestSeries.findByIdAndUpdate(test.testSeries, { $inc: { totalTests: -1 } });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "Test rolled back — question insert failed",
+        error: insertErr.message,
+      });
+    }
+
+    // 8. Update totalQuestions / totalMarks on the Test
+    const totalQuestions = insertedQuestions.length;
+    const totalMarks = insertedQuestions.reduce((sum, q) => sum + (q.marks || 0), 0);
+    const updatedTest = await Test.findByIdAndUpdate(
+      test._id,
+      { totalQuestions, totalMarks },
+      { new: true }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Test and questions created",
+      data: { test: updatedTest, questions: insertedQuestions },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error creating test with questions",
       error: error.message,
     });
   }
