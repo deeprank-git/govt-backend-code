@@ -59,3 +59,40 @@ To change the number of listing pages scraped, edit these constants at the top o
 | `OUTPUT_FILE` | `gktoday_articles.json` | Output JSON file path |
 
 **Output fields:** `title`, `url`, `date`, `category`, `category_link`, `source`, `source_link`, `content`, `tags`, `image_link`
+
+---
+
+## Pipeline Entry Points
+
+`gktoday_entry.py` and `drishti_entry.py` run the full scrape → MongoDB dump pipeline in one command. These are intended for use with cron.
+
+**Run manually:**
+```bash
+python gktoday_entry.py
+python drishti_entry.py
+```
+
+Each entry file scrapes today's articles, saves them to the intermediate JSON file in the respective subdirectory, then dumps them into MongoDB. The standalone scraper and dump scripts remain independently usable.
+
+---
+
+## Cron Setup (Linux)
+
+Logs are written to `/var/log/govt_prep/scrapers/`.
+
+Add the following jobs via `crontab -e`:
+
+```
+0 12 * * * cd /root/govt-prep/govt-backend-code/scrapers && /root/govt-prep/govt-backend-code/scrapers/.venv/bin/python gktoday_entry.py >> /var/log/govt_prep/scrapers/gktoday.log 2>&1
+
+0 16 * * * cd /root/govt-prep/govt-backend-code/scrapers && /root/govt-prep/govt-backend-code/scrapers/.venv/bin/python drishti_entry.py >> /var/log/govt_prep/scrapers/drishti.log 2>&1
+```
+
+- GKToday runs daily at **12:00 PM**
+- Drishti IAS runs daily at **4:00 PM**
+
+Ensure the cron daemon is running:
+```bash
+systemctl status cron
+systemctl start cron   # if not running
+```
