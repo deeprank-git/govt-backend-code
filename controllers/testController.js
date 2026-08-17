@@ -77,6 +77,10 @@ export const getTests = async (req, res) => {
       filter.paperType = req.query.paperType;
     }
 
+    if (req.query.search) {
+      filter.title = { $regex: req.query.search, $options: "i" };
+    }
+
     if (req.query.year) {
       const year = Number(req.query.year);
       if (!Number.isNaN(year)) {
