@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import TestSeries from "../models/TestSeries.js";
 import { toUploadUrl } from "../middleware/upload.js";
+import { slugify } from "../utils/slugify.js";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -121,6 +122,13 @@ export const createTestSeries = async (req, res) => {
       payload.notificationPdf = toUploadUrl(req.files.notificationPdf[0]);
     }
 
+    const baseSlug = slugify(payload.name);
+    const slugTaken = await TestSeries.exists({ slug: baseSlug });
+    if (slugTaken) {
+      const randomSuffix = Math.random().toString(36).slice(2, 8);
+      payload.slug = `${baseSlug}_${randomSuffix}`;
+    }
+
     const series = await TestSeries.create(payload);
 
     res.status(201).json({
@@ -196,9 +204,15 @@ export const updateTestSeries = async (req, res) => {
 // ✅ DELETE (soft)
 export const deleteTestSeries = async (req, res) => {
   try {
+    const existing = await TestSeries.findById(req.params.id).select("slug");
+    if (!existing) {
+      return res.status(404).json({ success: false, message: "Test Series not found" });
+    }
+
+    const randomSuffix = Math.random().toString(36).slice(2, 8);
     const deleted = await TestSeries.findByIdAndUpdate(
       req.params.id,
-      { isActive: false, isPublished: false },
+      { isActive: false, isPublished: false, slug: `${existing.slug}__deleted_${randomSuffix}` },
       { new: true }
     );
 

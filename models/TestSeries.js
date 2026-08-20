@@ -103,7 +103,7 @@ const testSeriesSchema = new mongoose.Schema(
 // Mongoose 9: pre("save") no longer receives a next() callback — the first
 // arg is a SaveOptions object. Just mutate `this` synchronously; no callback needed.
 testSeriesSchema.pre("save", function () {
-  if (this.isModified("name")) {
+  if (this.isModified("name") && !this.isModified("slug")) {
     this.slug = slugify(this.name);
   }
 });
