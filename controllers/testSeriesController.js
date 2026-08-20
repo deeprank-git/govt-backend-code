@@ -46,7 +46,7 @@ export const getTestSeries = async (req, res) => {
 
     const series = await TestSeries.find(filter)
       .populate("category", "name slug")
-      .sort({ createdAt: -1 })
+      .sort({ order: 1, createdAt: -1 })
       .lean();
 
     res.status(200).json({

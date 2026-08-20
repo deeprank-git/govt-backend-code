@@ -9,8 +9,8 @@ import { toUploadUrl } from "../middleware/upload.js";
 export const getCategories = async (req, res) => {
   try {
     const categories = await Category.find({ isActive: true })
-      .select("name slug image")
-      .sort({ name: 1 })
+      .select("name slug image order")
+      .sort({ order: 1, name: 1 })
       .lean();
 
     res.status(200).json({
@@ -55,12 +55,13 @@ export const getCategoryById = async (req, res) => {
 // ✅ CREATE category (Admin)
 export const createCategory = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, order } = req.body;
 
     const category = await Category.create({
       name,
       description,
       image: req.file ? toUploadUrl(req.file) : "",
+      ...(order !== undefined && { order: Number(order) }),
     });
 
     res.status(201).json({

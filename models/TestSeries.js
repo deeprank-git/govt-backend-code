@@ -92,6 +92,11 @@ const testSeriesSchema = new mongoose.Schema(
       default: 1,
     },
 
+    order: {
+      type: Number,
+      default: 0,
+    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
