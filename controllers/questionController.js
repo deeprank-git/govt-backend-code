@@ -1,5 +1,6 @@
 // controllers/questionController.js
 
+import mongoose from "mongoose";
 import { parse } from "csv-parse/sync";
 import Question from "../models/Question.js";
 import Test from "../models/Test.js";
@@ -25,7 +26,7 @@ const CSV_COLUMNS = [
 ];
 
 const CSV_EXAMPLE_ROW = [
-  "PASTE_TEST_ID_HERE",
+  "PASTE_TEST_ID_OR_TITLE_HERE",
   "General Awareness",
   "What is the capital of India?",
   "Mumbai",
@@ -289,7 +290,11 @@ export const bulkCreateQuestions = async (req, res) => {
       }
 
       if (testCache[row.test] === undefined) {
-        testCache[row.test] = await Test.findById(row.test);
+        // `row.test` may be either the Test's ObjectId or its human-readable
+        // title — admins filling the CSV by hand naturally use the title.
+        testCache[row.test] = mongoose.isValidObjectId(row.test)
+          ? await Test.findById(row.test)
+          : await Test.findOne({ title: row.test });
       }
       const testDoc = testCache[row.test];
       if (!testDoc) {
@@ -298,6 +303,7 @@ export const bulkCreateQuestions = async (req, res) => {
           message: `Row ${rowNumber}: test "${row.test}" not found`,
         });
       }
+      const testId = testDoc._id;
 
       const sectionDoc = testDoc.sections.find((s) => s.name === row.section);
       if (!sectionDoc) {
@@ -321,16 +327,16 @@ export const bulkCreateQuestions = async (req, res) => {
       if (row.order !== undefined && row.order !== "") {
         order = Number(row.order);
       } else {
-        const key = `${row.test}:${sectionId}`;
+        const key = `${testId}:${sectionId}`;
         if (nextOrderByTestSection[key] === undefined) {
-          nextOrderByTestSection[key] = await Question.countDocuments({ test: row.test, section: sectionId });
+          nextOrderByTestSection[key] = await Question.countDocuments({ test: testId, section: sectionId });
         }
         order = nextOrderByTestSection[key];
         nextOrderByTestSection[key] += 1;
       }
 
       questions.push({
-        test: row.test,
+        test: testId,
         section: sectionId,
         questionText: row.questionText,
         options: options.map((text) => ({ text })),
